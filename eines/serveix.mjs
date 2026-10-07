@@ -1,5 +1,5 @@
 /**
- * Nutrició — serveix una carpeta per mirar-la al navegador
+ * El cos — serveix una carpeta per mirar-la al navegador
  *
  *   node eines/serveix.mjs [carpeta] [port]      per defecte: .mirall 4173
  *

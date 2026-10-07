@@ -1,14 +1,12 @@
-# Popu — res d'això no ha de sortir mai de la màquina
+# El cos — res d'això no ha de sortir mai de la màquina
 
 # Credencials, claus i sessions
 .clasprc.json
 .clasp.json
 
 # L'ADREÇA DEL DESPLEGAMENT. La genera `npm run desplega` i no la llegeix
-# ningú: és una nota per a tu. Va aquí perquè el repositori és PÚBLIC i la
-# documentació promet que aquesta adreça no hi surt. Hi va sortir igualment,
-# comesa i publicada, i qualsevol que la trobés arribava a la porta.
-# La porta ara demana clau, però una adreça que no fa falta no s'ensenya.
+# ningú: és una nota per a tu. El repositori és PÚBLIC, i una adreça que no
+# fa falta no s'ensenya. (A JEFE hi va sortir publicada una vegada.)
 apps-script/03_Adreca.gs
 *.token
 *.key
@@ -20,28 +18,20 @@ client_secret*
 secrets*
 
 # Dades personals. El repositori és PÚBLIC: aquí no hi entra res teu.
-# Les còpies de FitFat i de finances són per importar-les, no per publicar-les.
+# Les còpies de FitFat són per importar-les, no per publicar-les.
 *copia*.json
 *backup*.json
 fitfat*.json
-finances*.json
 dades/
-Codi_AppsScript.gs
-
-# L automatitzacio de l escola. Porta CLAUS EN CLAR —Gemini, el token del bot
-# de Telegram, l identificador del xat— i dades de persones: el nom sencer,
-# l escola, els correus de la direccio i de les coordinadores, i noms
-# d alumnes als exemples. Res d aixo pot sortir d aquesta maquina.
-Automatització Vedruna/
-*detector_tasques*
-*context_assistent*
 
 # El paquet de seguiment físic: pes, composició corporal, salut, fotos.
-# És material d'origen per muntar el mòdul, no codi, i no ha de sortir mai
-# d'aquesta màquina. La barra final hi és a posta: ignora la carpeta sencera
-# encara que algú hi afegeixi fitxers nous a dins.
+# Material d'origen, no codi, i no ha de sortir mai d'aquesta màquina. La
+# barra final ignora la carpeta sencera encara que s'hi afegeixin fitxers.
 Seguiment fit/
 seguiment_data*.json
+*.jpg
+*.jpeg
+*.heic
 
 # Dependències
 node_modules/
@@ -56,9 +46,14 @@ desktop.ini
 *.bak
 ~$*
 
-# Previsualització local (no forma part del projecte)
-_previsualitza.html
+# El mirall: dades inventades i propostes, per mirar en local i prou.
 .mirall/
 
 # Els informes de QA: són d'una execució concreta i no del projecte.
 .qa/
+
+# La configuració local de l'editor i del panell de previsualització.
+.claude/
+
+# Les decisions de disseny en curs (pàgina de tria, esbossos).
+.impeccable/

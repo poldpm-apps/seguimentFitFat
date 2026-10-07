@@ -16,11 +16,18 @@
  * no s'han de desar enlloc. Són les teves dades.
  */
 
-var CAU = 'jefe-v1';
+/* EL NOM PORTA L'APP AL DAVANT, I NOMÉS S'ESBORREN LES SEVES.
+   Nutrició, el cos i les finances comparteixen poldpm.github.io, i la memòria
+   cau del navegador és UNA per a tot el domini. Amb un nom genèric i esborrant
+   «tot el que no sigui meu», cada app que s'actualitzés buidaria la de les
+   altres. */
+var PREFIX = 'cos-';
+var CAU = PREFIX + 'v1';
 var ESSENCIALS = [
   './',
   './index.html',
   './icona.svg',
+  './icona-192.png',
   './favicon.svg',
   './manifest.webmanifest'
 ];
@@ -38,7 +45,7 @@ self.addEventListener('activate', function (ev) {
   ev.waitUntil(
     caches.keys()
       .then(function (noms) {
-        return Promise.all(noms.filter(function (n) { return n !== CAU; })
+        return Promise.all(noms.filter(function (n) { return n.indexOf(PREFIX) === 0 && n !== CAU; })
                                .map(function (n) { return caches.delete(n); }));
       })
       .then(function () { return self.clients.claim(); })
