@@ -1,0 +1,64 @@
+# Popu — res d'això no ha de sortir mai de la màquina
+
+# Credencials, claus i sessions
+.clasprc.json
+.clasp.json
+
+# L'ADREÇA DEL DESPLEGAMENT. La genera `npm run desplega` i no la llegeix
+# ningú: és una nota per a tu. Va aquí perquè el repositori és PÚBLIC i la
+# documentació promet que aquesta adreça no hi surt. Hi va sortir igualment,
+# comesa i publicada, i qualsevol que la trobés arribava a la porta.
+# La porta ara demana clau, però una adreça que no fa falta no s'ensenya.
+apps-script/03_Adreca.gs
+*.token
+*.key
+*.pem
+.env
+.env.*
+credentials*
+client_secret*
+secrets*
+
+# Dades personals. El repositori és PÚBLIC: aquí no hi entra res teu.
+# Les còpies de FitFat i de finances són per importar-les, no per publicar-les.
+*copia*.json
+*backup*.json
+fitfat*.json
+finances*.json
+dades/
+Codi_AppsScript.gs
+
+# L automatitzacio de l escola. Porta CLAUS EN CLAR —Gemini, el token del bot
+# de Telegram, l identificador del xat— i dades de persones: el nom sencer,
+# l escola, els correus de la direccio i de les coordinadores, i noms
+# d alumnes als exemples. Res d aixo pot sortir d aquesta maquina.
+Automatització Vedruna/
+*detector_tasques*
+*context_assistent*
+
+# El paquet de seguiment físic: pes, composició corporal, salut, fotos.
+# És material d'origen per muntar el mòdul, no codi, i no ha de sortir mai
+# d'aquesta màquina. La barra final hi és a posta: ignora la carpeta sencera
+# encara que algú hi afegeixi fitxers nous a dins.
+Seguiment fit/
+seguiment_data*.json
+
+# Dependències
+node_modules/
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Temporals
+*.tmp
+*.bak
+~$*
+
+# Previsualització local (no forma part del projecte)
+_previsualitza.html
+.mirall/
+
+# Els informes de QA: són d'una execució concreta i no del projecte.
+.qa/

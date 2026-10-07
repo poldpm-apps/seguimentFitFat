@@ -1,0 +1,894 @@
+<script>
+/* JEFE — MÒDUL · Seguiment físic setmanal
+
+   LES REGLES CORREN AQUÍ, NO AL SERVIDOR.
+   Són aritmètica sobre unes desenes de files. Portar-les al navegador vol dir
+   que el veredicte apareix a l'instant, sense cap viatge i sense gastar res:
+   obrir la pantalla costa una crida i prou, i tot el que facis a partir d'aquí
+   —canviar de control, mirar un gràfic, corregir una xifra— és immediat.
+
+   Els llindars no es repeteixen: venen del servidor dins de la resposta, o sigui
+   que canviar-ne un és canviar-lo en un sol lloc. Hi ha una prova que passa el
+   mateix històric per les dues còpies i comprova que diuen el mateix. */
+
+
+/* ------------------------------------------------------------------------
+   LA GRÀFICA DEL SEGUIMENT
+
+   Viu aquí fora perquè la fan servir DOS llocs: la pantalla de Seguiment i el
+   visor, quan li demanes «ensenya'm el gràfic del pes». Dos dibuixos del
+   mateix acabarien dient coses diferents el dia que algú en toqués un.
+   ------------------------------------------------------------------------ */
+var GrafSeg = (function () {
+
+  function coma(n, dec) {
+    if (n === null || n === undefined || n === '') return '—';
+    var v = Number(n);
+    return (dec === undefined ? String(v) : v.toFixed(dec)).replace('.', ',');
+  }
+  function curta(iso) {
+    var p = String(iso).split('-');
+    return Number(p[2]) + ' ' + ['gen','feb','març','abr','maig','juny',
+      'jul','ag','set','oct','nov','des'][Number(p[1]) - 1];
+  }
+
+  /* UNA LÍNIA I PROU. El que has de veure és la forma: si baixa, si s'ha
+     aplanat, si ha rebotat. Les mesures marcades com a invàlides no hi surten
+     —la del 7 de juliol n'és una— perquè una mesura dolenta dibuixada com si
+     fos bona et fa creure una caiguda que no ha passat. */
+  function grafica(punts, unitat, dec) {
+    if (punts.length < 2) {
+      return '<p class="menut">Amb un sol punt encara no hi ha línia. ' +
+             'A partir del segon control es veurà la forma.</p>';
+    }
+    /* EL DIBUIX ES FA DESPRÉS, EN PÍXELS DE DEBÒ.
+       Amb un `viewBox` fix i `preserveAspectRatio="none"` la línia omplia
+       l'amplada però els punts sortien el·líptics: l'escala horitzontal i la
+       vertical no eren la mateixa, i un cercle estirat es veu de seguida a
+       l'escriptori. Aquí només es deixa el forat amb les dades a dins; el
+       traç es calcula amb l'amplada real quan ja és a la pàgina, i llavors
+       un cercle és un cercle a qualsevol mida. */
+    return '<svg class="seg-graf" role="img" data-graf=\'' +
+             esc(JSON.stringify(punts)) + '\' aria-label="' +
+             esc(punts.map(function (p) {
+               return curta(p.data) + ' ' + coma(p.v, dec) + ' ' + unitat; }).join(', ')) + '"></svg>' +
+      '<div class="seg-eix"><span>' + curta(punts[0].data) + '</span>' +
+        '<span>' + coma(punts[punts.length - 1].v, dec) + ' ' + unitat + '</span></div>';
+  }
+
+  /* Rep on ha de mirar: la pantalla li passa la seva arrel i el visor la
+     seva. Abans agafava `arrel` de la vista, que aquí fora no existeix. */
+  function dibuixaGrafiques(dins) {
+    (dins || document).querySelectorAll('[data-graf]').forEach(function (svg) {
+      var punts;
+      try { punts = JSON.parse(svg.getAttribute('data-graf')); } catch (e) { return; }
+      var A = Math.round(svg.clientWidth), H = Math.round(svg.clientHeight);
+      if (!A || !H) return;
+      var m = 8;
+
+      var vals = punts.map(function (p) { return p.v; });
+      var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+      var marge = (max - min) || 1;
+      min -= marge * 0.15; max += marge * 0.15;
+
+      var t0 = new Date(punts[0].data + 'T12:00:00').getTime();
+      var t1 = new Date(punts[punts.length - 1].data + 'T12:00:00').getTime();
+      var ample = (t1 - t0) || 1;
+
+      var xy = punts.map(function (p) {
+        var x = m + ((new Date(p.data + 'T12:00:00').getTime() - t0) / ample) * (A - m * 2);
+        var y = m + (1 - (p.v - min) / (max - min)) * (H - m * 2);
+        return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+      });
+      var ultim = xy[xy.length - 1];
+
+      svg.setAttribute('viewBox', '0 0 ' + A + ' ' + H);
+      svg.innerHTML =
+        '<polyline class="seg-linia" points="' +
+          xy.map(function (q) { return q.x + ',' + q.y; }).join(' ') + '"/>' +
+        xy.map(function (q) {
+          return '<circle class="seg-punt" cx="' + q.x + '" cy="' + q.y + '" r="2.5"/>';
+        }).join('') +
+        '<circle class="seg-punt seg-ara" cx="' + ultim.x + '" cy="' + ultim.y + '" r="4"/>';
+    });
+  }
+
+
+  return { html: grafica, dibuixa: dibuixaGrafiques, coma: coma, curta: curta };
+})();
+
+/* ------------------------------------------------------------------------
+   «ENSENYA'M EL GRÀFIC DEL PES»
+
+   Quatre mesures, un sol visor: el que canvia entre el pes i la cintura és
+   la columna, la unitat i els decimals, no el dibuix. Registrar-ne un per
+   mesura hauria estat el mateix codi quatre vegades.
+   ------------------------------------------------------------------------ */
+var MESURES_SEG = {
+  pes:     { nom: 'Pes',     unitat: 'kg', dec: 1, camp: 'pes' },
+  cintura: { nom: 'Cintura', unitat: 'cm', dec: 1, camp: 'cintura' },
+  forca:   { nom: 'Força',   unitat: '',   dec: 0, camp: 'forca' },
+  trail:   { nom: 'Trail',   unitat: '',   dec: 0, camp: 'trail' }
+};
+
+App.registraVisor('seguiment.mesura', {
+  titol: function (p) {
+    var m = MESURES_SEG[(p && p.quina) || 'pes'];
+    return m ? m.nom : 'Seguiment';
+  },
+
+  render: function (arrel, params) {
+    var clau = (params && params.quina) || 'pes';
+    var m = MESURES_SEG[clau] || MESURES_SEG.pes;
+
+    function pinta(d) {
+      var h = (d && d.historic) || [];
+      var punts = h.filter(function (c) {
+        if (c[m.camp] === null || c[m.camp] === undefined || c[m.camp] === '') return false;
+        /* La cintura marcada com a invàlida no hi surt: una mesura dolenta
+           dibuixada com si fos bona et fa creure una caiguda que no ha
+           passat. És el mateix criteri que a la pantalla. */
+        if (m.camp === 'cintura' && c.cinturaValida === false) return false;
+        return true;
+      }).map(function (c) { return { data: c.data, v: c[m.camp] }; });
+
+      if (punts.length < 2) {
+        arrel.innerHTML = '<p class="menut">Encara no hi ha prou controls per dibuixar ' +
+          'una línia. A partir del segon es veurà la forma.</p>';
+        return;
+      }
+
+      var primer = punts[0].v, ultim = punts[punts.length - 1].v;
+      var canvi = ultim - primer;
+
+      arrel.innerHTML = GrafSeg.html(punts, m.unitat, m.dec) +
+        '<div class="visor-peu">' +
+          '<span>' + esc(punts.length + ' controls des del ' + GrafSeg.curta(punts[0].data)) + '</span>' +
+          '<span>' + esc((canvi > 0 ? '+' : canvi < 0 ? '−' : '') +
+            GrafSeg.coma(Math.abs(canvi), m.dec) + (m.unitat ? ' ' + m.unitat : '')) + '</span>' +
+        '</div>';
+
+      /* El traç es calcula amb l'amplada real. Es dibuixa de seguida —la
+         disposició ja és feta— i es torna a dibuixar al cap d'un moment per
+         si el plafó encara s'estava obrint quan s'ha mesurat.
+         Res de `requestAnimationFrame`: si la pestanya no compon fotogrames,
+         no s'executa mai i la línia no surt. Ja m'ha passat dos cops avui. */
+      GrafSeg.dibuixa(arrel);
+      setTimeout(function () { if (arrel.isConnected) GrafSeg.dibuixa(arrel); }, 80);
+    }
+
+    var desat = Cau.get('seguiment', null);
+    if (desat) pinta(desat);
+    else arrel.innerHTML = Comp.carregant(1);
+
+    crida('seguiment', 'pantalla', {}).then(function (d) {
+      Cau.set('seguiment', d);
+      pinta(d);
+    }).catch(function (err) {
+      if (!desat) arrel.innerHTML = Comp.error(err, false);
+    });
+  }
+});
+
+App.registraVista('seguiment', {
+  render: function (arrel, params) {
+
+    var d = null;                 // la resposta del servidor
+    var triat = null;             // quin control s'està mirant (data)
+
+    /* LES FOTOS COMENCEN AMAGADES, SEMPRE.
+       És roba interior i mig cos, i entrar al seguiment per mirar el pes no
+       ha de voler dir ensenyar-ho —ni a ell, que ja se les sap, ni a qui
+       passi pel costat mentre mira el telèfon. S'obren quan les demana i es
+       tornen a tancar sortint de la pantalla: això no es recorda a posta.
+       I mentre estan amagades no es demanen a Google: la miniatura porta
+       l'adreça a `data-src` i no li passa a `src` fins que les obre. Deixar-ho
+       en mans de `loading="lazy"` hauria estat confiar que el navegador no
+       carrega el que no es veu, i això depèn del navegador; això no. */
+    var fotosObertes = false;
+
+    // ------------------------------------------------------------ utilitats
+    function coma(n, dec) {
+      if (n === null || n === undefined || n === '') return '—';
+      var v = Number(n);
+      return (dec === undefined ? String(v) : v.toFixed(dec)).replace('.', ',');
+    }
+    function ambSigne(n, dec) {
+      if (n === null || n === undefined) return '—';
+      return (Number(n) > 0 ? '+' : Number(n) < 0 ? '−' : '') + coma(Math.abs(n), dec);
+    }
+    function dies(a, b) {
+      return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
+    }
+    function curta(iso) {
+      var p = iso.split('-');
+      return Number(p[2]) + ' ' + ['gen','feb','març','abr','maig','juny',
+        'jul','ag','set','oct','nov','des'][Number(p[1]) - 1];
+    }
+
+    // ----------------------------------------------------------- LES REGLES
+    /* Còpia client de `Seguiment.analitza`. Els números surten de `d.llindars`;
+       aquí només hi ha la forma de les regles i el que diuen. */
+    var Regles = {
+      analitza: function (h, i, L) {
+        var a = [], cur = h[i], prev = i > 0 ? h[i - 1] : null;
+
+        if (cur.forca !== null && cur.forca < L.forcaMinima) {
+          a.push({ id: 'poca_forca', nivell: 'info',
+            text: (cur.forca === 0 ? 'Cap sessió de força' : 'Només ' + cur.forca + ' sessió de força') +
+                  '. Sense estímul, part del que perdis serà múscul, i menys múscul és pitjor ' +
+                  'per a la cursa. El mínim són dues sessions curtes de tren superior.' });
+        }
+        if (cur.trailGros > 0) {
+          a.push({ id: 'trail_gros', nivell: 'info',
+            text: cur.trailGros + (cur.trailGros === 1 ? ' sortida llarga' : ' sortides llargues') +
+                  ' aquesta setmana. Aquests dies toca menjar més: sense l\'extra, el dèficit ' +
+                  'se\'t dispara i el següent pesatge et sortirà massa avall.' });
+        }
+        if (cur.energia === 'baixa' && prev && prev.energia === 'baixa') {
+          a.push({ id: 'energia_baixa', nivell: 'avis',
+            text: 'Segona setmana seguida amb l\'energia baixa. Amb dèficit i trail, això ' +
+                  'sol voler dir que menges poc els dies que et mous, no que entrenis massa.' });
+        }
+
+        if (!prev || cur.pes === null || prev.pes === null) return a;
+
+        var d0 = dies(prev.data, cur.data);
+        var delta = Math.round((cur.pes - prev.pes) * 100) / 100;
+
+        if (Math.abs(delta) > L.saltImpossible) {
+          a.push({ id: 'salt_impossible', nivell: 'avis',
+            text: 'Del control anterior a aquest hi ha ' + ambSigne(delta, 1) +
+                  ' kg. Això no ho fa un cos en una setmana: o la bàscula o la tecla. Reconfirma-ho.' });
+          return a;
+        }
+
+        var perdut = Math.round((-delta) * 100) / 100;
+        var perSetmana = d0 > 0 ? Math.round((perdut * 7 / d0) * 100) / 100 : null;
+        var rar = d0 < L.diesTolerats[0] || d0 > L.diesTolerats[1];
+
+        var ref = Regles.cinturaAnterior(h, i);
+        if (cur.cinturaValida && cur.cintura !== null && ref) {
+          var baixa = Math.round((ref.cintura - cur.cintura) * 10) / 10;
+          if (baixa >= L.cinturaIncoherent && Math.abs(delta) <= L.pesEstable) {
+            a.push({ id: 'cintura_incoherent', nivell: 'avis',
+              text: 'Cintura −' + coma(baixa, 1) + ' cm amb el pes pràcticament igual (' +
+                    ambSigne(delta, 1) + ' kg). Això no és greix perdut: un centímetre de ' +
+                    'greix pesa. Torna-la a mesurar com toca abans de donar-la per bona.' });
+          }
+          if (ref.dies > 10) {
+            a.push({ id: 'cintura_vella', nivell: 'info',
+              text: 'L\'última cintura bona és de fa ' + ref.dies + ' dies: la comparació ' +
+                    'no és de setmana a setmana.' });
+          }
+          var canvi = Math.round((cur.cintura - ref.cintura) * 10) / 10;
+          if (delta >= -L.pesEstable && canvi <= 0) {
+            a.push({ id: 'senyal_bo', nivell: 'be',
+              text: 'Pes ' + ambSigne(delta, 1) + ' kg i cintura ' + ambSigne(canvi, 1) +
+                    ' cm. Això és exactament el que vols: la bàscula quieta i la cintura no. ' +
+                    'Progrés, no estancament.' });
+          }
+        }
+
+        if (rar) {
+          a.push({ id: 'interval_rar', nivell: 'info',
+            text: 'Han passat ' + d0 + ' dies des de l\'últim control: el ritme per setmana ' +
+                  'és una estimació, no una mesura.' });
+        }
+        if (perSetmana !== null && perSetmana > L.perdRapida) {
+          a.push({ id: 'massa_rapid', nivell: 'avis',
+            text: '−' + coma(perSetmana, 2) + ' kg per setmana: massa. La franja bona és ' +
+                  '0,4-0,7. A aquest ritme part del que se\'n va és múscul. Menja més els ' +
+                  'dies de sortida llarga.' });
+        } else if (perSetmana !== null &&
+                   perSetmana >= L.perdSana[0] && perSetmana <= L.perdSana[1]) {
+          a.push({ id: 'ritme_bo', nivell: 'be',
+            text: '−' + coma(perSetmana, 2) + ' kg per setmana: just a la franja bona.' });
+        }
+        return a;
+      },
+
+      cinturaAnterior: function (h, i) {
+        for (var k = i - 1; k >= 0; k--) {
+          if (h[k].cinturaValida && h[k].cintura !== null) {
+            return { cintura: h[k].cintura, data: h[k].data, dies: dies(h[k].data, h[i].data) };
+          }
+        }
+        return null;
+      },
+
+      veredicte: function (a) {
+        if (a.some(function (x) { return x.nivell === 'avis'; })) return 'Hi ha coses a corregir';
+        if (a.some(function (x) { return x.id === 'senyal_bo'; })) return 'Bona setmana';
+        return 'Setmana correcta';
+      }
+    };
+
+    // -------------------------------------------------------------- capçalera
+    function capcalera() {
+      var f = d && d.fase;
+      return '<header class="capcalera"><div class="capcalera-fila">' +
+        '<button class="btn btn-fantasma btn-icona" data-torna="1" aria-label="Torna al full índex">' +
+          ic('mapa', 'ic-p') + '</button>' +
+        '<div style="flex:1;min-width:0">' +
+          '<h1 style="font-size:1.0625rem;margin:0">Seguiment FitFat</h1>' +
+          '<p class="marge" style="margin:2px 0 0">' +
+            esc(f ? f.nom : 'sense fase definida') + '</p>' +
+        '</div>' +
+        '<button class="btn btn-primari" data-nou="1">' + ic('mes') + 'Control</button>' +
+      '</div></header>';
+    }
+
+    // ----------------------------------------------------------------- pinta
+    function pinta() {
+      var h = d.historic;
+      var L = d.llindars;
+
+      if (!h.length) {
+        arrel.innerHTML = capcalera() +
+          '<div class="pagina">' +
+            '<div class="estat">' + ic('seguiment', 'ic-g') +
+            '<h2>Encara no hi ha cap control</h2>' +
+            '<p>El primer marca el punt de partida. Pesa\'t i mesura\'t al matí, en dejú, ' +
+            'i apunta-ho: a partir del segon control ja hi haurà línia i veredicte.</p>' +
+            '<button class="btn btn-primari" data-nou="1">' + ic('mes') + 'Primer control</button>' +
+            '</div>' +
+          '</div>';
+        lliga();
+        return;
+      }
+
+      var i = h.length - 1;
+      if (triat) for (var k = 0; k < h.length; k++) if (h[k].data === triat) i = k;
+      var cur = h[i];
+      var avisos = Regles.analitza(h, i, L);
+      var ver = Regles.veredicte(avisos);
+      var prev = i > 0 ? h[i - 1] : null;
+
+      var deltaPes = prev && cur.pes !== null && prev.pes !== null
+        ? Math.round((cur.pes - prev.pes) * 100) / 100 : null;
+      var refC = Regles.cinturaAnterior(h, i);
+      var deltaCintura = refC && cur.cintura !== null && cur.cinturaValida
+        ? Math.round((cur.cintura - refC.cintura) * 10) / 10 : null;
+
+      var pesos = h.filter(function (c) { return c.pes !== null; })
+                   .map(function (c) { return { data: c.data, v: c.pes }; });
+      var cintures = h.filter(function (c) { return c.cintura !== null && c.cinturaValida; })
+                      .map(function (c) { return { data: c.data, v: c.cintura }; });
+
+      arrel.innerHTML = capcalera() +
+        '<div class="pagina">' +
+
+          (d.estat.pendent
+            ? '<button class="seg-reclama" data-nou="1">' +
+                '<b>Aquesta setmana encara no l\'has fet</b>' +
+                '<span>Pesa\'t i mesura\'t al matí, en dejú, abans d\'esmorzar</span>' +
+              '</button>'
+            : '') +
+
+          /* EL VEREDICTE PRIMER. És el que has vingut a saber. */
+          '<section class="fitxa viu seg-veredicte" data-mena="' + esc(mena(avisos)) + '">' +
+            '<p class="marge">' + esc(curta(cur.data)) +
+              (i === h.length - 1 ? ' · últim control' : '') + '</p>' +
+            '<h2 style="margin:var(--e1) 0 var(--e3)">' + esc(ver) + '</h2>' +
+            /* QUATRE XIFRES, TOTES DEL MATEIX PES.
+               El trail hi era com a lletra petita a sota de la força, i no és
+               una nota al peu: és la meitat del que fa aquesta setmana i el
+               que decideix què ha de menjar. Ara té la seva columna, com el
+               pes i la cintura.
+               A sota de cadascuna hi va el que la fa llegible: el canvi
+               respecte de l'últim control on n'hi ha, i l'objectiu de la fase
+               on el canvi no vol dir res —tres sortides no són «+1», són tres
+               de les que tocaven. */
+            '<div class="seg-xifres">' +
+              xifra('Pes', coma(cur.pes, 1), 'kg',
+                    deltaPes === null ? '' : ambSigne(deltaPes, 1)) +
+              xifra('Cintura', cur.cintura === null ? '—' : coma(cur.cintura, 1), 'cm',
+                    deltaCintura === null ? '' : ambSigne(deltaCintura, 1)) +
+              xifra('Força', cur.forca === null ? '—' : cur.forca, '',
+                    objectiu('forca')) +
+              xifra('Trail', cur.trail === null ? '—' : cur.trail, '',
+                    cur.trailGros
+                      ? cur.trailGros + (cur.trailGros === 1 ? ' llarga' : ' llargues')
+                      : objectiu('trail')) +
+            '</div>' +
+            laCarrega(cur) +
+          '</section>' +
+
+          (avisos.length
+            ? '<div class="seg-avisos">' + avisos.map(function (a) {
+                return '<p class="seg-avis" data-n="' + esc(a.nivell) + '">' +
+                  ic(a.nivell === 'avis' ? 'avis' : a.nivell === 'be' ? 'punxo' : 'llegenda') +
+                  '<span>' + esc(a.text) + '</span></p>';
+              }).join('') + '</div>'
+            : '') +
+
+          '<div id="seg-comentari"></div>' +
+          '<button class="btn btn-secundari" data-comenta="' + esc(cur.data) + '" style="width:100%">' +
+            ic('mapa') + 'Què en penses?</button>' +
+
+          /* Les gràfiques */
+          '<section class="seg-grafiques">' +
+            '<div class="fitxa"><p class="marge">Pes</p>' + GrafSeg.html(pesos, 'kg', 1) + '</div>' +
+            '<div class="fitxa"><p class="marge">Cintura</p>' + GrafSeg.html(cintures, 'cm', 1) + '</div>' +
+          '</section>' +
+
+          fotos(cur) +
+
+          /* L'històric: tocar-ne un el porta a dalt */
+          '<section>' +
+            '<p class="marge" style="margin:var(--e4) 0 var(--e2)">Controls</p>' +
+            '<div class="seg-controls">' + h.slice().reverse().map(function (c) {
+              var j = h.indexOf(c);
+              var v = Regles.veredicte(Regles.analitza(h, j, L));
+              return '<div class="franja-fila"><button class="franja seg-fila" data-va="' +
+                esc(c.data) + '"' + (c.data === cur.data ? ' aria-current="true"' : '') + '>' +
+                '<span><span class="franja-nom">' + esc(curta(c.data)) + '</span>' +
+                '<span class="franja-sota">' + esc(v) + '</span></span>' +
+                '<span class="franja-cota"><span class="n">' + coma(c.pes, 1) + '</span>' +
+                '<span class="u">kg</span></span>' +
+              '</button></div>';
+            }).join('') + '</div>' +
+          '</section>' +
+        '</div>';
+
+      lliga();
+    }
+
+    function xifra(nom, valor, unitat, sota) {
+      return '<div><span class="marge">' + esc(nom) + '</span>' +
+        '<b>' + esc(String(valor)) + (unitat ? '<i>' + esc(unitat) + '</i>' : '') + '</b>' +
+        '<span class="seg-delta">' + esc(sota || '') + '</span></div>';
+    }
+
+    /* El que demana la fase, quan n'hi ha. Ve del full del pla: aquí no hi ha
+       cap xifra seva escrita. */
+    function objectiu(quin) {
+      var f = d && d.fase;
+      return f && f[quin] ? 'de ' + f[quin] : '';
+    }
+
+    /* LA CÀRREGA DE LA SETMANA DEL CONTROL.
+       «Força 2 · Trail 3» diu quantes vegades, i el que va costar la setmana
+       no ho diu ningú: tres sortides planes i tres amb mil sis-cents metres
+       són el mateix número. La línia va SOTA les quatre xifres i no com una
+       cinquena columna perquè no és una mesura del cos —és el que hi ha fet—,
+       i porta a la pantalla que la té sencera.
+       No hi és quan no hi ha res apuntat: una línia que diu «0» faria pensar
+       que aquella setmana no vas moure't, i el que passa és que no la vas
+       importar. */
+    function laCarrega(cur) {
+      var c = (d.carregues || {})[dillunsDe(cur.data)];
+      if (!c) return '';
+      var t = [coma(c.kmEsforc, 1) + ' km-esforç'];
+      if (c.desnivell) t.push(Math.round(c.desnivell).toLocaleString('ca-ES') + ' m D+');
+      if (c.km) t.push(coma(c.km, 1) + ' km');
+      return '<button class="seg-carrega" data-entrena="1">' +
+        ic('entrenaments', 'ic-p') +
+        '<span>' + esc(t.join(' · ')) + '</span>' +
+        '<span class="menut">Els entrenaments ›</span>' +
+      '</button>';
+    }
+
+    function dillunsDe(iso) {
+      var x = new Date(iso + 'T12:00:00');
+      x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+      return x.toISOString().slice(0, 10);
+    }
+
+    function mena(avisos) {
+      if (avisos.some(function (a) { return a.nivell === 'avis'; })) return 'avis';
+      if (avisos.some(function (a) { return a.id === 'senyal_bo' || a.id === 'ritme_bo'; })) return 'be';
+      return 'neutre';
+    }
+
+    // ------------------------------------------------------------------ fotos
+    /* PER QUÈ ES FAN LES FOTOS, QUE NO ÉS PER MIRAR-SE-LES.
+       Durant un any això va ser una galeria, i una galeria no serveix de res:
+       les fotos ja les té al telèfon i ell ja es veu cada dia al mirall. Dues
+       imatges separades per un mes se li assemblen —a tothom se li assemblen—
+       i el canvi que hi ha només el veu qui les pot posar l'una sobre l'altra.
+       Per això aquí el que mana ara és la lectura, i les imatges són el
+       material amb què es fa. La lectura va a dalt i les fotos van amagades:
+       exactament l'ordre invers del que hi havia. */
+    function fotos(cur) {
+      var h = d.historic;
+      var ANGLES = [['frontal', 'Frontal'], ['perfil', 'Perfil'], ['esquena', 'Esquena']];
+
+      var quantes = 0;
+      h.forEach(function (c) {
+        ANGLES.forEach(function (a) { if (c.fotos[a[0]]) quantes++; });
+      });
+      var lectura = Cau.get('seg.ullada.' + cur.data, '');
+
+      return '<section class="seg-fotos">' +
+        '<div class="seg-fotos-cap">' +
+          '<p class="marge">Fotos</p>' +
+          (quantes
+            ? '<button class="btn btn-fantasma btn-menut" data-ulls="1" ' +
+                'aria-controls="seg-tires" aria-expanded="' + (fotosObertes ? 'true' : 'false') + '">' +
+                (fotosObertes ? 'Amaga-les' : 'Ensenya-les') + '</button>'
+            : '') +
+        '</div>' +
+
+        (quantes
+          ? '<p class="menut">' + quantes + (quantes === 1 ? ' foto guardada' : ' fotos guardades') +
+              ' a una carpeta privada del teu Drive. No es mostren fins que ho demanes.</p>'
+          : '<p class="menut">Encara no n\'hi ha cap. Van a una carpeta privada del teu Drive; ' +
+            'aquí només se\'n guarda la referència. Amb dues del mateix angle separades per ' +
+            'unes setmanes ja es pot llegir el canvi.</p>') +
+
+        /* LA LECTURA. És el que ha de sortir de fer-se les fotos, i per això
+           va abans que les imatges i no darrere. */
+        '<div id="seg-ullada">' +
+          (lectura ? '<blockquote class="seg-diu">' + esc(lectura) + '</blockquote>' : '') +
+        '</div>' +
+        (quantes
+          ? '<button class="btn btn-secundari" data-mira="' + esc(cur.data) + '" style="width:100%">' +
+              ic('seguiment') + (lectura ? 'Torna-les a mirar' : 'Què hi veus?') + '</button>'
+          : '') +
+
+        '<div id="seg-tires"' + (fotosObertes ? '' : ' hidden') + '>' +
+          ANGLES.map(function (a) {
+            var amb = h.filter(function (c) { return c.fotos[a[0]]; });
+            if (!amb.length) return '';
+            return '<div class="seg-angle"><p class="menut">' + a[1] + '</p>' +
+              '<div class="seg-tira">' + amb.map(function (c) {
+                /* LA MIDA VA ESCRITA A L'ETIQUETA i no només a l'estil: la
+                   imatge arriba tard i, sense mida, la fila creixia de cop
+                   quan entrava i et movia el que estaves mirant. Són les
+                   mateixes 118×158 que hi posa el full d'estil. */
+                return '<figure>' +
+                  '<img loading="lazy" width="118" height="158" ' +
+                    'alt="' + esc(a[1] + ' del ' + curta(c.data)) + '" ' +
+                    (fotosObertes ? 'src' : 'data-src') +
+                    '="https://drive.google.com/thumbnail?sz=w320&id=' + esc(c.fotos[a[0]]) + '">' +
+                  /* El boto de treure-la. Petit i a la cantonada, pero de 32
+                     pixels: prou per encertar-lo i prou per no encertar-lo
+                     sense voler mentre passes la tira amb el dit. I no fa
+                     res sense preguntar-ho: una foto del cos d un dia
+                     concret no es pot tornar a fer. */
+                  '<button class="seg-treu" data-treu="' + esc(a[0]) +
+                    '" data-dia="' + esc(c.data) + '" data-nom="' + esc(a[1]) +
+                    '" aria-label="Treu la foto ' + esc(a[1].toLowerCase() + ' del ' + curta(c.data)) +
+                    '">' + ic('tancar') + '</button>' +
+                  '<figcaption>' + esc(curta(c.data)) + '</figcaption></figure>';
+              }).join('') + '</div></div>';
+          }).join('') +
+        '</div>' +
+
+        '<div class="seg-puja">' + ANGLES.map(function (a) {
+          return '<label class="btn btn-secundari">' + ic('mes') + esc(a[1]) +
+            '<input type="file" accept="image/*" hidden data-foto="' + a[0] +
+            '" data-data="' + esc(cur.data) + '"></label>';
+        }).join('') + '</div>' +
+        '<p class="menut">' + esc(d.comEsMesura.fotos) + '</p>' +
+      '</section>';
+    }
+
+    // -------------------------------------------------------------- formulari
+    /* ELS ESTÀNDARDS, AL COSTAT DEL CAMP.
+       No en una pantalla d'ajuda que no obriràs: aquí, mentre tens la cinta a
+       la mà. Una cintura mesurada d'una altra manera no és comparable amb la
+       d'abans, i llavors tota la sèrie deixa de voler dir res. */
+    function obreControl(c) {
+      var esNou = !c;
+      var v = c || { data: d.estat.avui, cinturaValida: true, forca: 0, trail: 0, trailGros: 0 };
+
+      var tria = function (nom, etiqueta, opcions, ara) {
+        return '<div class="camp"><label>' + esc(etiqueta) + '</label>' +
+          '<div class="tria-fila">' + opcions.map(function (o) {
+            return '<button type="button" class="tria-bt" data-camp="' + nom + '" data-val="' + esc(o) +
+              '"' + (ara === o ? ' aria-pressed="true"' : '') + '>' + esc(o) + '</button>';
+          }).join('') + '</div></div>';
+      };
+
+      var cos = App.modal(esNou ? 'Control setmanal' : 'Control del ' + curta(v.data),
+        '<form id="f-seg" class="formulari">' +
+          '<div class="camp"><label for="s-data">Dia</label>' +
+            '<input class="entrada" id="s-data" type="date" value="' + esc(v.data) + '" required></div>' +
+
+          /* TEXT I NO NUMBER, A POSTA. `type=number` rebutja la coma: escrius
+             68,9 —que es el que escriuries— i el camp es queda buit sense dir-te
+             res. Amb `inputmode=decimal` surt igualment el teclat de numeros al
+             telefon, i s'hi val tant la coma com el punt. */
+          '<div class="camp"><label for="s-pes">Pes (kg)</label>' +
+            '<input class="entrada" id="s-pes" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" autocomplete="off" ' +
+              'value="' + (v.pes === null || v.pes === undefined ? '' : v.pes) + '">' +
+            '<p class="menut">' + esc(d.comEsMesura.pes) + '</p></div>' +
+
+          '<div class="camp"><label for="s-cintura">Cintura (cm)</label>' +
+            '<input class="entrada" id="s-cintura" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" autocomplete="off" ' +
+              'value="' + (v.cintura === null || v.cintura === undefined ? '' : v.cintura) + '">' +
+            '<p class="menut">' + esc(d.comEsMesura.cintura) + '</p>' +
+            '<label class="seg-check"><input type="checkbox" id="s-cintura-mala"' +
+              (v.cinturaValida === false ? ' checked' : '') + '> ' +
+              'Aquesta mesura no és de fiar (no la comptis)</label></div>' +
+
+          /* «DE GROSSES» NO VOLIA DIR RES.
+             Era l'etiqueta del tercer camp i ningú no sabia grosses de què:
+             ni ell, que és qui l'omplia cada divendres. Són les sortides de
+             trail que et deixen buit, i compten a part perquè aquells dies has
+             de menjar més —és l'única raó per la qual el camp existeix. Ara ho
+             diu l'etiqueta i ho acaba de dir la línia de sota, al costat del
+             camp i no en cap pantalla d'ajuda. */
+          '<div class="camp-fila">' +
+            '<div class="camp"><label for="s-forca">Força</label>' +
+              '<input class="entrada" id="s-forca" type="number" min="0" max="14" inputmode="numeric" ' +
+                'value="' + (v.forca === null ? 0 : v.forca) + '"></div>' +
+            '<div class="camp"><label for="s-trail">Trail</label>' +
+              '<input class="entrada" id="s-trail" type="number" min="0" max="14" inputmode="numeric" ' +
+                'value="' + (v.trail === null ? 0 : v.trail) + '"></div>' +
+            '<div class="camp"><label for="s-gros">Llargues</label>' +
+              '<input class="entrada" id="s-gros" type="number" min="0" max="7" inputmode="numeric" ' +
+                'value="' + (v.trailGros === null ? 0 : v.trailGros) + '"></div>' +
+          '</div>' +
+          '<p class="menut" style="margin:calc(-1 * var(--e2)) 0 0">' +
+            'Sessions de força i sortides de trail de la setmana. De les sortides, quantes ' +
+            'eren llargues o dures —les que et deixen buit—: aquells dies has de menjar més.' +
+          '</p>' +
+
+          tria('energia', 'Energia', ['baixa', 'normal', 'alta'], v.energia) +
+          tria('son', 'Son', ['malament', 'normal', 'bé'], v.son) +
+          tria('gana', 'Gana', ['poca', 'normal', 'molta'], v.gana) +
+          tria('dieta', 'Dieta', ['malament', 'a mitges', 'bé'], v.dieta) +
+
+          '<div class="camp"><label for="s-notes">Notes</label>' +
+            '<textarea class="entrada" id="s-notes" rows="2">' + esc(v.notes || '') + '</textarea></div>' +
+
+          '<button class="btn btn-primari" type="submit" style="width:100%">Desa el control</button>' +
+        '</form>');
+
+      var tries = { energia: v.energia || '', son: v.son || '', gana: v.gana || '', dieta: v.dieta || '' };
+      cos.querySelectorAll('.tria-bt').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var camp = b.dataset.camp;
+          var ja = tries[camp] === b.dataset.val;
+          tries[camp] = ja ? '' : b.dataset.val;
+          cos.querySelectorAll('[data-camp="' + camp + '"]').forEach(function (x) {
+            x.setAttribute('aria-pressed', x.dataset.val === tries[camp] ? 'true' : 'false');
+          });
+        });
+      });
+
+      cos.querySelector('#f-seg').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var bt = cos.querySelector('button[type="submit"]');
+        bt.disabled = true; bt.textContent = 'Desant…';
+        var buit = function (id) {
+          var x = cos.querySelector(id).value.trim();
+          return x === '' ? null : Number(x.replace(',', '.'));
+        };
+
+        /* UN CONTROL BUIT NO ÉS UN CONTROL.
+           Amb tots els camps sense omplir, el formulari es desava igualment i
+           et deia «Control desat»: al full hi queia una fila amb el dia i res
+           més, i tu no sabies si havies desat alguna cosa o no. */
+        /* Les valoracions (energia, son, gana, dieta) arriben preomplertes amb
+           les de l últim control, o sigui que no serveixen per saber si has
+           posat res: el que compta és una mesura o una nota escrita ara. */
+        var teMesura = ['#s-pes', '#s-cintura', '#s-forca', '#s-trail', '#s-gros']
+          .some(function (id) { return cos.querySelector(id).value.trim() !== ''; }) ||
+          cos.querySelector('#s-notes').value.trim() !== '';
+        if (!teMesura) {
+          bt.disabled = false; bt.textContent = 'Desa el control';
+          App.brindis('Posa-hi almenys una mesura o una nota.', 'error');
+          try { cos.querySelector('#s-pes').focus(); } catch (e) {}
+          return;
+        }
+
+        crida('seguiment', 'desa', {
+          data: cos.querySelector('#s-data').value,
+          pes: buit('#s-pes'),
+          cintura: buit('#s-cintura'),
+          cinturaValida: !cos.querySelector('#s-cintura-mala').checked,
+          forca: buit('#s-forca'), trail: buit('#s-trail'), trailGros: buit('#s-gros'),
+          energia: tries.energia, son: tries.son, gana: tries.gana, dieta: tries.dieta,
+          notes: cos.querySelector('#s-notes').value.trim()
+        }).then(function (r) {
+          App.tancaModal();
+          App.brindis('Control desat');
+          triat = r.data;
+          carrega(true);
+        }).catch(function (err) {
+          bt.disabled = false; bt.textContent = 'Desa el control';
+          App.brindis(err.message, 'error');
+        });
+      });
+    }
+
+    // ------------------------------------------------------------------ lliga
+    function lliga() {
+      GrafSeg.dibuixa(arrel);
+      /* Si canvies l'amplada —girar el telèfon, obrir-ho a l'escriptori— les
+         coordenades d'abans ja no valen. Es tornen a calcular, i prou: no és
+         cap animació, és el mateix dibuix a la mida nova. */
+      if (!arrel._redibuixa) {
+        arrel._redibuixa = function () { GrafSeg.dibuixa(arrel); };
+        window.addEventListener('resize', arrel._redibuixa);
+      }
+
+      var t = arrel.querySelector('[data-torna]');
+      if (t) t.addEventListener('click', function () { App.ves('inici'); });
+
+      var ent = arrel.querySelector('[data-entrena]');
+      if (ent) ent.addEventListener('click', function () {
+        App.ves('entrenaments', { desde: dillunsDe(triat || d.estat.avui) });
+      });
+
+      arrel.querySelectorAll('[data-nou]').forEach(function (b) {
+        b.addEventListener('click', function () { obreControl(null); });
+      });
+
+      arrel.querySelectorAll('[data-va]').forEach(function (b) {
+        b.addEventListener('click', function () { triat = b.dataset.va; pinta(); });
+      });
+
+      var c = arrel.querySelector('[data-comenta]');
+      if (c) c.addEventListener('click', function () {
+        var caixa = arrel.querySelector('#seg-comentari');
+        c.disabled = true; c.textContent = 'Pensant…';
+        caixa.innerHTML = '<div class="esquelet" style="height:64px"></div>';
+        crida('seguiment', 'comenta', { data: c.dataset.comenta }).then(function (r) {
+          caixa.innerHTML = '<blockquote class="seg-diu">' + esc(r.comentari) + '</blockquote>' +
+            (r.tallat ? '<p class="seg-avis" data-n="avis">' + ic('avis') +
+              '<span>S\'ha quedat a mitges. Torna-ho a demanar.</span></p>' : '');
+          /* El botó només se'n va si la resposta és sencera: si s'ha tallat,
+             el que li fa falta és justament tornar-hi. */
+          if (!r.tallat) c.remove();
+          else { c.disabled = false; c.innerHTML = ic('mapa') + 'Torna-hi'; }
+        }).catch(function (err) {
+          caixa.innerHTML = '';
+          c.disabled = false; c.innerHTML = ic('mapa') + 'Què en penses?';
+          App.brindis(err.message, 'error');
+        });
+      });
+
+      /* ENSENYAR-LES I TORNAR-LES A AMAGAR, sense repintar la pàgina: repintar
+         et tornaria a dalt de tot cada vegada, i el que vols mirar és la tira.
+         L'atribut `hidden` és el que fa que les miniatures no es demanin a
+         Google mentre estiguin tancades. */
+      var ulls = arrel.querySelector('[data-ulls]');
+      var tires = arrel.querySelector('#seg-tires');
+      if (ulls && tires) ulls.addEventListener('click', function () {
+        fotosObertes = !fotosObertes;
+        if (fotosObertes) {
+          tires.querySelectorAll('img[data-src]').forEach(function (im) {
+            im.src = im.dataset.src;
+            im.removeAttribute('data-src');
+          });
+        }
+        tires.hidden = !fotosObertes;
+        ulls.textContent = fotosObertes ? 'Amaga-les' : 'Ensenya-les';
+        ulls.setAttribute('aria-expanded', fotosObertes ? 'true' : 'false');
+      });
+
+      /* LA LECTURA DE LES FOTOS. Costa una petició i uns quants segons —hi van
+         imatges—, o sigui que un cop feta es desa al telèfon: tornar a obrir
+         la pantalla no n'ha de gastar una altra. Es llença quan les fotos
+         canvien, que és l'únic moment en què deixa de ser certa. */
+      var mira = arrel.querySelector('[data-mira]');
+      if (mira) mira.addEventListener('click', function () {
+        var caixa = arrel.querySelector('#seg-ullada');
+        var dia = mira.dataset.mira;
+        mira.disabled = true; mira.textContent = 'Mirant-les…';
+        caixa.innerHTML = '<div class="esquelet" style="height:96px"></div>';
+        crida('seguiment', 'analitzaFotos', { data: dia }).then(function (r) {
+          /* UNA LECTURA A MITGES NO ES DESA i es diu que ho és. Guardar-la
+             voldria dir ensenyar-li una frase tallada cada cop que obrís la
+             pantalla, i sense saber-ho ell se la creuria sencera. */
+          if (!r.tallat) Cau.set('seg.ullada.' + dia, r.comentari);
+          caixa.innerHTML = '<blockquote class="seg-diu">' + esc(r.comentari) + '</blockquote>' +
+            (r.tallat ? '<p class="seg-avis" data-n="avis">' + ic('avis') +
+              '<span>S\'ha quedat a mitges. Torna-ho a demanar.</span></p>' : '');
+          mira.disabled = false;
+          mira.innerHTML = ic('seguiment') + 'Torna-les a mirar';
+        }).catch(function (err) {
+          caixa.innerHTML = '';
+          mira.disabled = false;
+          mira.innerHTML = ic('seguiment') + 'Què hi veus?';
+          App.brindis(err.message, 'error');
+        });
+      });
+
+      /* TREURE UNA FOTO: SEMPRE PREGUNTANT.
+         És l'única cosa d'aquesta pantalla que no es pot desfer tocant un altre
+         botó, i una foto del cos d'un dia concret no es pot tornar a fer. Per
+         això hi ha una pregunta pel mig i per això diu on va a parar: a la
+         paperera del Drive, on la tens trenta dies. */
+      arrel.querySelectorAll('[data-treu]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var cos = App.modal('Treure la foto?',
+            '<p>La ' + esc(b.dataset.nom.toLowerCase()) + ' del ' +
+              esc(curta(b.dataset.dia)) + '.</p>' +
+            '<p class="menut">El fitxer va a la paperera del teu Drive i el pots ' +
+              'recuperar durant trenta dies. Del control, en desapareix ara.</p>' +
+            '<div class="formulari">' +
+              '<button class="btn btn-perill" data-si="1" style="width:100%">Treu-la</button>' +
+              '<button class="btn btn-secundari" data-no="1" style="width:100%">Deixa-la</button>' +
+            '</div>');
+          cos.querySelector('[data-no]').addEventListener('click', App.tancaModal);
+          cos.querySelector('[data-si]').addEventListener('click', function () {
+            var bt = cos.querySelector('[data-si]');
+            bt.disabled = true; bt.textContent = 'Traient-la…';
+            crida('seguiment', 'esborraFoto', { data: b.dataset.dia, angle: b.dataset.treu })
+              .then(function (r) {
+                App.tancaModal();
+                App.brindis(r.paperera ? 'Foto treta i llençada a la paperera' : 'Foto treta');
+                /* La lectura desada parlava d'un joc de fotos que ja no és
+                   aquest. Cauen totes: la comparació sempre agafa la més vella
+                   de l'angle, o sigui que treure'n una en pot canviar més
+                   d'una de les lectures. */
+                Cau.oblida('seg.ullada.');
+                carrega(true);
+              })
+              .catch(function (err) {
+                bt.disabled = false; bt.textContent = 'Treu-la';
+                App.brindis(err.message, 'error');
+              });
+          });
+        });
+      });
+
+      /* LES FOTOS PUGEN D'UNA EN UNA i sense bloquejar la pantalla. Es redueixen
+         abans d'enviar-les: del telèfon surten a quatre mil píxels i per
+         comparar-les no en calen més de mil dos-cents. */
+      arrel.querySelectorAll('[data-foto]').forEach(function (inp) {
+        inp.addEventListener('change', function () {
+          var f = inp.files && inp.files[0];
+          if (!f) return;
+          App.brindis('Pujant la foto…');
+          redueix(f).then(function (dataUrl) {
+            return crida('seguiment', 'pujaFoto',
+              { data: inp.dataset.data, angle: inp.dataset.foto, contingut: dataUrl });
+          }).then(function () {
+            App.brindis('Foto desada');
+            Cau.oblida('seg.ullada.');
+            /* En puges tres seguides: si cada una et torna a dalt, has de baixar
+               tres vegades fins a la tira de fotos. */
+            App.mantenintLaVista(function () { carrega(true); });
+          }).catch(function (err) { App.brindis(err.message, 'error'); });
+        });
+      });
+    }
+
+    function redueix(fitxer) {
+      return new Promise(function (ok, no) {
+        var lector = new FileReader();
+        lector.onerror = function () { no(new Error('No he pogut llegir la imatge.')); };
+        lector.onload = function () {
+          var img = new Image();
+          img.onerror = function () { no(new Error('Això no sembla una imatge.')); };
+          img.onload = function () {
+            var MAX = 1200;
+            var e = Math.min(1, MAX / Math.max(img.width, img.height));
+            var c = document.createElement('canvas');
+            c.width = Math.round(img.width * e); c.height = Math.round(img.height * e);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            ok(c.toDataURL('image/jpeg', 0.82));
+          };
+          img.src = lector.result;
+        };
+        lector.readAsDataURL(fitxer);
+      });
+    }
+
+    // ----------------------------------------------------------------- càrrega
+    function carrega(refresca) {
+      var cau = Cau.get('seguiment', null);
+      if (cau && !refresca) { d = cau; pinta(); }
+      else if (!cau) arrel.innerHTML = Comp.carregant(3);
+
+      crida('seguiment', 'pantalla', {}).then(function (r) {
+        d = r; Cau.set('seguiment', r); pinta();
+      }).catch(function (err) {
+        if (d) { App.brindis('Sense connexió: dades del telèfon', 'error'); return; }
+        arrel.innerHTML = Comp.error(err, true);
+      });
+    }
+
+    if (params && params.data) triat = params.data;
+    carrega(false);
+  }
+});
+</script>
