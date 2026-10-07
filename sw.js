@@ -22,14 +22,15 @@
    «tot el que no sigui meu», cada app que s'actualitzés buidaria la de les
    altres. */
 var PREFIX = 'cos-';
-var CAU = PREFIX + 'v1';
+var CAU = PREFIX + 'v2';   // v2: el disseny nou i la seva font
 var ESSENCIALS = [
   './',
   './index.html',
   './icona.svg',
   './icona-192.png',
   './favicon.svg',
-  './manifest.webmanifest'
+  './manifest.webmanifest',
+  './fonts/hanken-grotesk.woff2'
 ];
 
 self.addEventListener('install', function (ev) {

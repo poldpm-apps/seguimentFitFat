@@ -1,5 +1,5 @@
 <script>
-/* JEFE — MÒDUL · Seguiment físic setmanal
+/* EL COS — Seguiment setmanal
 
    LES REGLES CORREN AQUÍ, NO AL SERVIDOR.
    Són aritmètica sobre unes desenes de files. Portar-les al navegador vol dir
@@ -9,7 +9,11 @@
 
    Els llindars no es repeteixen: venen del servidor dins de la resposta, o sigui
    que canviar-ne un és canviar-lo en un sol lloc. Hi ha una prova que passa el
-   mateix històric per les dues còpies i comprova que diuen el mateix. */
+   mateix històric per les dues còpies i comprova que diuen el mateix.
+
+   EL DIBUIX: «el pols de les setmanes». Cada control és un número de catàleg
+   (CTRL 041) i una carena; les carenes apilades, velles i clares al darrere i
+   la d'ara fosca al davant, són la mateixa idea que la icona. */
 
 
 /* ------------------------------------------------------------------------
@@ -34,65 +38,65 @@ var GrafSeg = (function () {
 
   /* UNA LÍNIA I PROU. El que has de veure és la forma: si baixa, si s'ha
      aplanat, si ha rebotat. Les mesures marcades com a invàlides no hi surten
-     —la del 7 de juliol n'és una— perquè una mesura dolenta dibuixada com si
-     fos bona et fa creure una caiguda que no ha passat. */
-  function grafica(punts, unitat, dec) {
+     perquè una mesura dolenta dibuixada com si fos bona et fa creure una
+     caiguda que no ha passat. `triat` és la data del control que es mira: el
+     seu punt porta l'anella i la xifra. */
+  function grafica(punts, unitat, dec, triat) {
     if (punts.length < 2) {
-      return '<p class="menut">Amb un sol punt encara no hi ha línia. ' +
+      return '<p class="menut" style="margin-top:var(--e3)">Amb un sol punt encara no hi ha línia. ' +
              'A partir del segon control es veurà la forma.</p>';
     }
-    /* EL DIBUIX ES FA DESPRÉS, EN PÍXELS DE DEBÒ.
-       Amb un `viewBox` fix i `preserveAspectRatio="none"` la línia omplia
-       l'amplada però els punts sortien el·líptics: l'escala horitzontal i la
-       vertical no eren la mateixa, i un cercle estirat es veu de seguida a
-       l'escriptori. Aquí només es deixa el forat amb les dades a dins; el
-       traç es calcula amb l'amplada real quan ja és a la pàgina, i llavors
-       un cercle és un cercle a qualsevol mida. */
+    /* EL DIBUIX ES FA DESPRÉS, EN PÍXELS DE DEBÒ. Aquí només es deixa el
+       forat amb les dades a dins; el traç es calcula amb l'amplada real quan
+       ja és a la pàgina, i llavors un cercle és un cercle a qualsevol mida. */
     return '<svg class="seg-graf" role="img" data-graf=\'' +
-             esc(JSON.stringify(punts)) + '\' aria-label="' +
+             esc(JSON.stringify({ p: punts, dec: dec, triat: triat || null })) + '\' aria-label="' +
              esc(punts.map(function (p) {
                return curta(p.data) + ' ' + coma(p.v, dec) + ' ' + unitat; }).join(', ')) + '"></svg>' +
-      '<div class="seg-eix"><span>' + curta(punts[0].data) + '</span>' +
-        '<span>' + coma(punts[punts.length - 1].v, dec) + ' ' + unitat + '</span></div>';
+      '<div class="seg-eix"><span class="gravat">' + esc(curta(punts[0].data)) + '</span>' +
+        '<span class="gravat">' + esc(curta(punts[punts.length - 1].data)) + '</span></div>';
   }
 
-  /* Rep on ha de mirar: la pantalla li passa la seva arrel i el visor la
-     seva. Abans agafava `arrel` de la vista, que aquí fora no existeix. */
   function dibuixaGrafiques(dins) {
     (dins || document).querySelectorAll('[data-graf]').forEach(function (svg) {
-      var punts;
-      try { punts = JSON.parse(svg.getAttribute('data-graf')); } catch (e) { return; }
+      var g;
+      try { g = JSON.parse(svg.getAttribute('data-graf')); } catch (e) { return; }
+      var punts = g.p || g, dec = g.dec === undefined ? 1 : g.dec;
       var A = Math.round(svg.clientWidth), H = Math.round(svg.clientHeight);
       if (!A || !H) return;
-      var m = 8;
+      var DALT = 18, BAIX = 10, DRETA = 46;
 
       var vals = punts.map(function (p) { return p.v; });
       var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
       var marge = (max - min) || 1;
-      min -= marge * 0.15; max += marge * 0.15;
+      var lo = min - marge * 0.12, hi = max + marge * 0.12;
 
       var t0 = new Date(punts[0].data + 'T12:00:00').getTime();
       var t1 = new Date(punts[punts.length - 1].data + 'T12:00:00').getTime();
       var ample = (t1 - t0) || 1;
+      var X = function (p) { return 4 + ((new Date(p.data + 'T12:00:00').getTime() - t0) / ample) * (A - 8 - DRETA); };
+      var Y = function (v) { return DALT + (1 - (v - lo) / (hi - lo)) * (H - DALT - BAIX); };
+      var r1 = function (n) { return Math.round(n * 10) / 10; };
 
-      var xy = punts.map(function (p) {
-        var x = m + ((new Date(p.data + 'T12:00:00').getTime() - t0) / ample) * (A - m * 2);
-        var y = m + (1 - (p.v - min) / (max - min)) * (H - m * 2);
-        return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
-      });
-      var ultim = xy[xy.length - 1];
+      var sel = punts.length - 1;
+      if (g.triat) for (var k = 0; k < punts.length; k++) if (punts[k].data === g.triat) sel = k;
+      var s = punts[sel];
 
       svg.setAttribute('viewBox', '0 0 ' + A + ' ' + H);
       svg.innerHTML =
+        '<path d="M0 ' + (H - 1) + 'H' + A + '" stroke="var(--fil)" stroke-width="1" fill="none"/>' +
+        '<path d="M0 ' + r1(Y(max)) + 'H' + (A - DRETA + 6) + '" stroke="var(--t1)" stroke-width="1" stroke-dasharray="1 3" fill="none"/>' +
+        '<text x="' + A + '" y="' + r1(Y(max) + 4) + '" text-anchor="end" style="fill:var(--tinta-2)">' + coma(max, dec) + '</text>' +
         '<polyline class="seg-linia" points="' +
-          xy.map(function (q) { return q.x + ',' + q.y; }).join(' ') + '"/>' +
-        xy.map(function (q) {
-          return '<circle class="seg-punt" cx="' + q.x + '" cy="' + q.y + '" r="2.5"/>';
+          punts.map(function (p) { return r1(X(p)) + ',' + r1(Y(p.v)); }).join(' ') + '"/>' +
+        punts.map(function (p) {
+          return '<circle class="seg-punt" cx="' + r1(X(p)) + '" cy="' + r1(Y(p.v)) + '" r="2"/>';
         }).join('') +
-        '<circle class="seg-punt seg-ara" cx="' + ultim.x + '" cy="' + ultim.y + '" r="4"/>';
+        '<circle class="seg-anella" cx="' + r1(X(s)) + '" cy="' + r1(Y(s.v)) + '" r="7"/>' +
+        '<circle class="seg-punt seg-ara" cx="' + r1(X(s)) + '" cy="' + r1(Y(s.v)) + '" r="3.5"/>' +
+        '<text x="' + r1(Math.min(X(s) + 11, A - DRETA + 8)) + '" y="' + r1(Y(s.v) - 9) + '">' + coma(s.v, dec) + '</text>';
     });
   }
-
 
   return { html: grafica, dibuixa: dibuixaGrafiques, coma: coma, curta: curta };
 })();
@@ -101,8 +105,7 @@ var GrafSeg = (function () {
    «ENSENYA'M EL GRÀFIC DEL PES»
 
    Quatre mesures, un sol visor: el que canvia entre el pes i la cintura és
-   la columna, la unitat i els decimals, no el dibuix. Registrar-ne un per
-   mesura hauria estat el mateix codi quatre vegades.
+   la columna, la unitat i els decimals, no el dibuix.
    ------------------------------------------------------------------------ */
 var MESURES_SEG = {
   pes:     { nom: 'Pes',     unitat: 'kg', dec: 1, camp: 'pes' },
@@ -125,9 +128,7 @@ App.registraVisor('seguiment.mesura', {
       var h = (d && d.historic) || [];
       var punts = h.filter(function (c) {
         if (c[m.camp] === null || c[m.camp] === undefined || c[m.camp] === '') return false;
-        /* La cintura marcada com a invàlida no hi surt: una mesura dolenta
-           dibuixada com si fos bona et fa creure una caiguda que no ha
-           passat. És el mateix criteri que a la pantalla. */
+        /* La cintura marcada com a invàlida no hi surt, igual que a la pantalla. */
         if (m.camp === 'cintura' && c.cinturaValida === false) return false;
         return true;
       }).map(function (c) { return { data: c.data, v: c[m.camp] }; });
@@ -148,11 +149,9 @@ App.registraVisor('seguiment.mesura', {
             GrafSeg.coma(Math.abs(canvi), m.dec) + (m.unitat ? ' ' + m.unitat : '')) + '</span>' +
         '</div>';
 
-      /* El traç es calcula amb l'amplada real. Es dibuixa de seguida —la
-         disposició ja és feta— i es torna a dibuixar al cap d'un moment per
-         si el plafó encara s'estava obrint quan s'ha mesurat.
-         Res de `requestAnimationFrame`: si la pestanya no compon fotogrames,
-         no s'executa mai i la línia no surt. Ja m'ha passat dos cops avui. */
+      /* Es dibuixa de seguida i es torna a dibuixar al cap d'un moment per si
+         el plafó encara s'estava obrint. Res de `requestAnimationFrame`: si la
+         pestanya no compon fotogrames, no s'executa mai i la línia no surt. */
       GrafSeg.dibuixa(arrel);
       setTimeout(function () { if (arrel.isConnected) GrafSeg.dibuixa(arrel); }, 80);
     }
@@ -175,6 +174,8 @@ App.registraVista('seguiment', {
 
     var d = null;                 // la resposta del servidor
     var triat = null;             // quin control s'està mirant (data)
+    var setmanes = null;          // la càrrega dia a dia, per dilluns (per a les carenes)
+    var tots = false;             // l'històric sencer o només els cinc últims
 
     /* LES FOTOS COMENCEN AMAGADES, SEMPRE.
        És roba interior i mig cos, i entrar al seguiment per mirar el pes no
@@ -304,19 +305,25 @@ App.registraVista('seguiment', {
       }
     };
 
+
+    /* EL NÚMERO DE CATÀLEG. És la posició del control a l'històric, i prou:
+       el primer que vas fer és el 001. No s'inventa res i no canvia mai. */
+    function cat(i) { return 'CTRL ' + ('00' + (i + 1)).slice(-3); }
+
     // -------------------------------------------------------------- capçalera
     function capcalera() {
       var f = d && d.fase;
-      return '<header class="capcalera"><div class="capcalera-fila">' +
-        '<button class="btn btn-fantasma btn-icona" data-torna="1" aria-label="Torna al full índex">' +
-          ic('mapa', 'ic-p') + '</button>' +
-        '<div style="flex:1;min-width:0">' +
-          '<h1 style="font-size:1.0625rem;margin:0">Seguiment FitFat</h1>' +
-          '<p class="marge" style="margin:2px 0 0">' +
-            esc(f ? f.nom : 'sense fase definida') + '</p>' +
+      return '<header class="capcalera">' +
+        '<div class="cap-fila">' +
+          '<button class="btn btn-icona" data-torna="1" aria-label="Torna a l\'inici">' + ic('esquerra') + '</button>' +
+          '<span class="marca">' + ic('cos') + '<span class="gravat tinta">El cos</span></span>' +
+          '<button class="btn btn-primari" data-nou="1" aria-haspopup="dialog">' + ic('mes') + 'Control</button>' +
         '</div>' +
-        '<button class="btn btn-primari" data-nou="1">' + ic('mes') + 'Control</button>' +
-      '</div></header>';
+        '<div class="cap-titol">' +
+          '<h1>Seguiment</h1>' +
+          '<p>' + esc(f ? f.nom + (f.objectiu ? ' · ' + f.objectiu : '') : 'Sense fase definida') + '</p>' +
+        '</div>' +
+      '</header>';
     }
 
     // ----------------------------------------------------------------- pinta
@@ -355,80 +362,95 @@ App.registraVista('seguiment', {
                    .map(function (c) { return { data: c.data, v: c.pes }; });
       var cintures = h.filter(function (c) { return c.cintura !== null && c.cinturaValida; })
                       .map(function (c) { return { data: c.data, v: c.cintura }; });
+      var mn = mena(avisos);
 
       arrel.innerHTML = capcalera() +
         '<div class="pagina">' +
 
           (d.estat.pendent
-            ? '<button class="seg-reclama" data-nou="1">' +
+            ? '<button class="reclam" data-nou="1" aria-haspopup="dialog">' +
+                '<span class="gravat"><span class="num-cat">' + cat(h.length) + '</span> · avui · pendent</span>' +
                 '<b>Aquesta setmana encara no l\'has fet</b>' +
-                '<span>Pesa\'t i mesura\'t al matí, en dejú, abans d\'esmorzar</span>' +
+                '<span class="menut">Pesa\'t i mesura\'t al matí, en dejú, abans d\'esmorzar.</span>' +
+                '<span class="btn" aria-hidden="true">Fes-lo</span>' +
               '</button>'
             : '') +
 
           /* EL VEREDICTE PRIMER. És el que has vingut a saber. */
-          '<section class="fitxa viu seg-veredicte" data-mena="' + esc(mena(avisos)) + '">' +
-            '<p class="marge">' + esc(curta(cur.data)) +
-              (i === h.length - 1 ? ' · últim control' : '') + '</p>' +
-            '<h2 style="margin:var(--e1) 0 var(--e3)">' + esc(ver) + '</h2>' +
-            /* QUATRE XIFRES, TOTES DEL MATEIX PES.
-               El trail hi era com a lletra petita a sota de la força, i no és
-               una nota al peu: és la meitat del que fa aquesta setmana i el
-               que decideix què ha de menjar. Ara té la seva columna, com el
-               pes i la cintura.
-               A sota de cadascuna hi va el que la fa llegible: el canvi
-               respecte de l'últim control on n'hi ha, i l'objectiu de la fase
-               on el canvi no vol dir res —tres sortides no són «+1», són tres
-               de les que tocaven. */
-            '<div class="seg-xifres">' +
-              xifra('Pes', coma(cur.pes, 1), 'kg',
-                    deltaPes === null ? '' : ambSigne(deltaPes, 1)) +
-              xifra('Cintura', cur.cintura === null ? '—' : coma(cur.cintura, 1), 'cm',
-                    deltaCintura === null ? '' : ambSigne(deltaCintura, 1)) +
-              xifra('Força', cur.forca === null ? '—' : cur.forca, '',
-                    objectiu('forca')) +
-              xifra('Trail', cur.trail === null ? '—' : cur.trail, '',
-                    cur.trailGros
-                      ? cur.trailGros + (cur.trailGros === 1 ? ' llarga' : ' llargues')
-                      : objectiu('trail')) +
-            '</div>' +
-            laCarrega(cur) +
+          '<section class="veredicte" data-mena="' + esc(mn) + '">' +
+            '<p class="gravat"><span class="num-cat">' + cat(i) + '</span> · ' + esc(curta(cur.data)) +
+              ' · ' + (i === h.length - 1 ? 'últim control' : 'control antic') + '</p>' +
+            '<h2 class="veredicte-v" aria-live="polite">' + esc(ver) + '</h2>' +
+            (mn === 'avis' ? '<p class="veredicte-nota">Mira els avisos de sota.</p>' : '') +
+            pols(h, i) +
           '</section>' +
 
+          /* QUATRE XIFRES, TOTES DEL MATEIX PES.
+             El trail hi era com a lletra petita a sota de la força, i no és
+             una nota al peu: és la meitat del que fa aquesta setmana i el
+             que decideix què ha de menjar. Ara té la seva columna, com el
+             pes i la cintura.
+             A sota de cadascuna hi va el que la fa llegible: el canvi
+             respecte de l'últim control on n'hi ha, i l'objectiu de la fase
+             on el canvi no vol dir res —tres sortides no són «+1», són tres
+             de les que tocaven. */
+          '<section class="seg-xifres" aria-label="Les quatre xifres del control">' +
+            xifra('Pes', coma(cur.pes, 1), 'kg',
+                  deltaPes === null ? '' : ambSigne(deltaPes, 1) + ' kg') +
+            xifra('Cintura', cur.cintura === null ? '—' : coma(cur.cintura, 1), 'cm',
+                  deltaCintura === null ? (cur.cintura !== null && !cur.cinturaValida ? 'no és de fiar' : '')
+                                        : ambSigne(deltaCintura, 1) + ' cm') +
+            xifra('Força', cur.forca === null ? '—' : cur.forca, objectiu('forca'), 'sessions') +
+            xifra('Trail', cur.trail === null ? '—' : cur.trail, objectiu('trail'),
+                  cur.trailGros
+                    ? cur.trailGros + (cur.trailGros === 1 ? ' llarga' : ' llargues')
+                    : 'sortides') +
+          '</section>' +
+          laCarrega(cur) +
+
           (avisos.length
-            ? '<div class="seg-avisos">' + avisos.map(function (a) {
-                return '<p class="seg-avis" data-n="' + esc(a.nivell) + '">' +
-                  ic(a.nivell === 'avis' ? 'avis' : a.nivell === 'be' ? 'punxo' : 'llegenda') +
-                  '<span>' + esc(a.text) + '</span></p>';
-              }).join('') + '</div>'
+            ? '<ul class="avisos-regles" aria-label="Avisos de les regles">' + avisos.map(function (a) {
+                return '<li data-n="' + esc(a.nivell) + '">' +
+                  '<span class="gravat nivell">' + (a.nivell === 'avis' ? 'A corregir' : a.nivell === 'be' ? 'Bé' : 'Nota') + '</span>' +
+                  '<p>' + esc(a.text) + '</p></li>';
+              }).join('') + '</ul>'
             : '') +
 
-          '<div id="seg-comentari"></div>' +
-          '<button class="btn btn-secundari" data-comenta="' + esc(cur.data) + '" style="width:100%">' +
-            ic('mapa') + 'Què en penses?</button>' +
+          '<section class="seccio" aria-label="Comentari de l\'entrenador">' +
+            '<div class="seccio-cap"><h2>Entrenador</h2><span class="gravat">IA · 8 controls, fase i pla</span></div>' +
+            '<div id="seg-comentari"></div>' +
+            '<button class="btn btn-ple" data-comenta="' + esc(cur.data) + '" style="margin-top:var(--e4)">' +
+              'Què en penses?</button>' +
+          '</section>' +
 
-          /* Les gràfiques */
-          '<section class="seg-grafiques">' +
-            '<div class="fitxa"><p class="marge">Pes</p>' + GrafSeg.html(pesos, 'kg', 1) + '</div>' +
-            '<div class="fitxa"><p class="marge">Cintura</p>' + GrafSeg.html(cintures, 'cm', 1) + '</div>' +
+          '<section class="seccio" aria-label="Gràfiques">' +
+            '<div class="seccio-cap"><h2>Evolució</h2><span class="gravat">' + h.length +
+              (h.length === 1 ? ' control' : ' controls') + '</span></div>' +
+            grafica('Pes', 'kg', pesos, cur) +
+            grafica('Cintura', 'cm', cintures, cur) +
           '</section>' +
 
           fotos(cur) +
 
           /* L'històric: tocar-ne un el porta a dalt */
-          '<section>' +
-            '<p class="marge" style="margin:var(--e4) 0 var(--e2)">Controls</p>' +
-            '<div class="seg-controls">' + h.slice().reverse().map(function (c) {
+          '<section class="seccio" aria-label="Controls">' +
+            '<div class="seccio-cap"><h2>Controls</h2><span class="gravat">toca\'n un per veure\'l a dalt</span></div>' +
+            '<ol class="controls">' + h.slice().reverse().filter(function (c, n) {
+              return tots || n < 5 || c.data === cur.data;
+            }).map(function (c) {
               var j = h.indexOf(c);
-              var v = Regles.veredicte(Regles.analitza(h, j, L));
-              return '<div class="franja-fila"><button class="franja seg-fila" data-va="' +
-                esc(c.data) + '"' + (c.data === cur.data ? ' aria-current="true"' : '') + '>' +
-                '<span><span class="franja-nom">' + esc(curta(c.data)) + '</span>' +
-                '<span class="franja-sota">' + esc(v) + '</span></span>' +
-                '<span class="franja-cota"><span class="n">' + coma(c.pes, 1) + '</span>' +
-                '<span class="u">kg</span></span>' +
-              '</button></div>';
-            }).join('') + '</div>' +
+              var an = Regles.analitza(h, j, L);
+              return '<li><button class="fila-c" data-va="' + esc(c.data) + '"' +
+                (c.data === cur.data ? ' aria-current="true"' : '') + '>' +
+                '<span class="cat">' + cat(j) + '<b>' + esc(curta(c.data)) + '</b></span>' +
+                '<span class="v" data-n="' + esc(mena(an)) + '">' + esc(Regles.veredicte(an)) + '</span>' +
+                '<span class="n">' + coma(c.pes, 1) + '<small>kg</small></span>' +
+              '</button></li>';
+            }).join('') + '</ol>' +
+            (h.length > 5
+              ? '<div class="controls-mes"><button class="btn" data-tots="1" aria-expanded="' + (tots ? 'true' : 'false') + '">' +
+                  (tots ? 'Només els cinc últims' : 'Tots els controls · ' + h.length) + '</button></div>'
+              : '') +
           '</section>' +
         '</div>';
 
@@ -436,9 +458,10 @@ App.registraVista('seguiment', {
     }
 
     function xifra(nom, valor, unitat, sota) {
-      return '<div><span class="marge">' + esc(nom) + '</span>' +
-        '<b>' + esc(String(valor)) + (unitat ? '<i>' + esc(unitat) + '</i>' : '') + '</b>' +
-        '<span class="seg-delta">' + esc(sota || '') + '</span></div>';
+      return '<div class="xifra"><span class="gravat">' + esc(nom) + '</span>' +
+        '<span class="xifra-gran"><span class="xifra-n">' + esc(String(valor)) + '</span>' +
+          (unitat ? '<span class="xifra-u">' + esc(unitat) + '</span>' : '') + '</span>' +
+        '<span class="xifra-sota">' + esc(sota || '') + '</span></div>';
     }
 
     /* El que demana la fase, quan n'hi ha. Ve del full del pla: aquí no hi ha
@@ -446,6 +469,17 @@ App.registraVista('seguiment', {
     function objectiu(quin) {
       var f = d && d.fase;
       return f && f[quin] ? 'de ' + f[quin] : '';
+    }
+
+    function grafica(nom, unitat, punts, cur) {
+      var ultim = punts.length ? punts[punts.length - 1].v : null;
+      var primer = punts.length ? punts[0].v : null;
+      return '<div class="grafica">' +
+        '<div class="grafica-cap"><span class="gravat">' + esc(nom + ' · ' + unitat) + '</span>' +
+          (punts.length > 1 ? '<span class="val">' + esc(coma(primer, 1) + ' → ' + coma(ultim, 1)) + '</span>' : '') +
+        '</div>' +
+        GrafSeg.html(punts, unitat, 1, cur.data) +
+      '</div>';
     }
 
     /* LA CÀRREGA DE LA SETMANA DEL CONTROL.
@@ -460,26 +494,124 @@ App.registraVista('seguiment', {
     function laCarrega(cur) {
       var c = (d.carregues || {})[dillunsDe(cur.data)];
       if (!c) return '';
-      var t = [coma(c.kmEsforc, 1) + ' km-esforç'];
+      var t = [];
       if (c.desnivell) t.push(Math.round(c.desnivell).toLocaleString('ca-ES') + ' m D+');
       if (c.km) t.push(coma(c.km, 1) + ' km');
-      return '<button class="seg-carrega" data-entrena="1">' +
-        ic('entrenaments', 'ic-p') +
-        '<span>' + esc(t.join(' · ')) + '</span>' +
-        '<span class="menut">Els entrenaments ›</span>' +
+      return '<button class="carrega" data-entrena="1">' +
+        '<span class="gravat">Càrrega de la setmana</span>' +
+        '<span class="carrega-linia"><span class="carrega-km">' + esc(coma(c.kmEsforc, 1)) +
+          '<small>km-esforç</small></span>' +
+          (t.length ? '<span class="carrega-resta">' + esc(t.join(' · ')) + '</span>' : '') + '</span>' +
+        '<span class="enllac">Els entrenaments' + ic('dreta') + '</span>' +
       '</button>';
     }
 
     function dillunsDe(iso) {
       var x = new Date(iso + 'T12:00:00');
       x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
-      return x.toISOString().slice(0, 10);
+      return [x.getFullYear(), ('0' + (x.getMonth() + 1)).slice(-2), ('0' + x.getDate()).slice(-2)].join('-');
     }
 
     function mena(avisos) {
       if (avisos.some(function (a) { return a.nivell === 'avis'; })) return 'avis';
       if (avisos.some(function (a) { return a.id === 'senyal_bo' || a.id === 'ritme_bo'; })) return 'be';
       return 'neutre';
+    }
+
+    // -------------------------------------------------------------- les carenes
+    /* EL POLS DE LES SETMANES.
+       Una carena per control —els dotze últims—, dibuixada amb la càrrega de
+       cada dia d'aquella setmana, de dilluns a diumenge: els cims són les
+       sortides i l'alçada, els km-esforç. Les velles, clares i al darrere; la
+       d'ara, fosca i al davant; la que estàs mirant, el doble de gruixuda.
+       NO S'INVENTA CAP CIM. La càrrega dia a dia la diu el servidor dels
+       entrenaments; mentre no arriba, o si aquella setmana no hi ha res
+       apuntat, la carena és plana. Una muntanya inventada al dibuix seria
+       exactament la xifra a mitges que aquesta app no vol ensenyar. */
+    var W = 343;
+    function pols(h, i) {
+      var desde = Math.max(0, h.length - 12);
+      var vistes = h.slice(desde);
+      var N = vistes.length;
+      var PAS = 11, TOP = 48;
+      var pendent = d.estat.pendent;
+      var alt = TOP + (N - 1) * PAS + (pendent ? 28 : 10);
+      var maxDia = 0;
+      vistes.forEach(function (c) {
+        var dd = setmanes && setmanes[dillunsDe(c.data)];
+        if (dd) dd.forEach(function (v) { if (v > maxDia) maxDia = v; });
+      });
+      var K = maxDia ? Math.min(1.8, 44 / maxDia) : 0;
+      var rampa = [[188, 206, 212], [122, 181, 193], [28, 132, 150]];
+      function mescla(t) {
+        var s = t * (rampa.length - 1), a = Math.min(Math.floor(s), rampa.length - 2), f = s - a;
+        return 'rgb(' + rampa[a].map(function (v, k) { return Math.round(v + (rampa[a + 1][k] - v) * f); }).join(',') + ')';
+      }
+
+      var cos = '', etiqueta = '';
+      vistes.forEach(function (c, n) {
+        var j = desde + n, base = TOP + n * PAS;
+        var dd = (setmanes && setmanes[dillunsDe(c.data)]) || [0, 0, 0, 0, 0, 0, 0];
+        var pts = [];
+        for (var x = 0; x <= W; x += 3) {
+          var y = 0;
+          for (var k = 0; k < 7; k++) {
+            var cx = W * 0.14 + k * (W * 0.72 / 6), g = (x - cx) / 10;
+            y += dd[k] * K * Math.exp(-g * g);
+          }
+          pts.push(x + ' ' + (Math.round((base - y) * 10) / 10));
+        }
+        var linia = 'M' + pts.join('L');
+        var esAra = j === h.length - 1, esTriat = j === i;
+        cos += '<path class="f" d="' + linia + 'L' + W + ' ' + (base + 14) + 'L0 ' + (base + 14) + 'Z"/>' +
+          '<path class="r" d="' + linia + '" stroke="' + (esTriat || esAra ? '#054a57' : mescla(N > 2 ? n / (N - 2) : 0)) +
+          '" stroke-width="' + (esTriat ? 2.4 : esAra ? 1.4 : 1) + '"/>';
+        if (esTriat) etiqueta = cat(j);
+      });
+      if (pendent) {
+        var yP = TOP + (N - 1) * PAS + 10;
+        cos += '<path d="M0 ' + yP + 'H' + W + '" stroke="var(--tinta-2)" stroke-width="1" stroke-dasharray="2 4" fill="none"/>' +
+          '<text x="0" y="' + (yP + 17) + '" style="fill:var(--tinta-2)">' + cat(h.length) + ' · PENDENT</text>';
+      }
+      var resum = vistes.map(function (c) {
+        var dd = setmanes && setmanes[dillunsDe(c.data)];
+        var tot = dd ? dd.reduce(function (s, v) { return s + v; }, 0) : null;
+        return curta(c.data) + (tot === null ? '' : ' ' + coma(Math.round(tot * 10) / 10, 1) + ' km-esforç');
+      }).join(', ');
+      return '<svg class="pols" viewBox="0 0 ' + W + ' ' + alt + '" role="img" aria-label="' +
+          esc('Els últims ' + N + ' controls apilats com a carenes, cada una amb la càrrega dia a dia de la seva setmana: ' + resum) + '">' +
+          cos + '</svg>' +
+        /* EL NÚMERO DE LA CARENA GRUIXUDA VA AL PEU, NO A SOBRE. Escrit al
+           dibuix tapava el dissabte i el diumenge de la del davant, que és
+           justament la sortida llarga. */
+        '<div class="pols-peu"><span class="gravat">' +
+          (setmanes === null ? 'Llegint els entrenaments…'
+            : maxDia ? 'Cada carena, una setmana' + (etiqueta ? ' · <span class="num-cat">' + etiqueta + '</span> la gruixuda' : '')
+            : 'Sense entrenaments apuntats') +
+        '</span><span class="gravat">dl → dg</span></div>';
+    }
+
+    /* La càrrega dia a dia surt de la pantalla d'entrenaments: dotze setmanes
+       acabades en la del darrer control. Es desa amb la mateixa clau que fa
+       servir aquella pantalla, o sigui que si hi vas després ja la té. */
+    function llegeixSetmanes(ambXarxa) {
+      var h = d.historic;
+      if (!h.length) return;
+      var dl = dillunsDe(h[h.length - 1].data);
+      function omple(r) {
+        setmanes = {};
+        (r.corba || []).forEach(function (x) { if (x.dies) setmanes[x.dilluns] = x.dies; });
+      }
+      var desat = Cau.get('entrenaments.' + dl, null);
+      if (desat && desat.corba) { omple(desat); App.mantenintLaVista(pinta); }
+      if (!ambXarxa) return;
+      crida('entrenaments', 'pantalla', { desde: dl }).then(function (r) {
+        Cau.set('entrenaments.' + r.dilluns, r);
+        omple(r);
+        if (arrel.isConnected) App.mantenintLaVista(pinta);
+      }).catch(function () {
+        if (setmanes === null) { setmanes = {}; if (arrel.isConnected) App.mantenintLaVista(pinta); }
+      });
     }
 
     // ------------------------------------------------------------------ fotos
@@ -489,8 +621,7 @@ App.registraVista('seguiment', {
        imatges separades per un mes se li assemblen —a tothom se li assemblen—
        i el canvi que hi ha només el veu qui les pot posar l'una sobre l'altra.
        Per això aquí el que mana ara és la lectura, i les imatges són el
-       material amb què es fa. La lectura va a dalt i les fotos van amagades:
-       exactament l'ordre invers del que hi havia. */
+       material amb què es fa. La lectura va a dalt i les fotos van amagades. */
     function fotos(cur) {
       var h = d.historic;
       var ANGLES = [['frontal', 'Frontal'], ['perfil', 'Perfil'], ['esquena', 'Esquena']];
@@ -501,53 +632,54 @@ App.registraVista('seguiment', {
       });
       var lectura = Cau.get('seg.ullada.' + cur.data, '');
 
-      return '<section class="seg-fotos">' +
-        '<div class="seg-fotos-cap">' +
-          '<p class="marge">Fotos</p>' +
-          (quantes
-            ? '<button class="btn btn-fantasma btn-menut" data-ulls="1" ' +
-                'aria-controls="seg-tires" aria-expanded="' + (fotosObertes ? 'true' : 'false') + '">' +
-                (fotosObertes ? 'Amaga-les' : 'Ensenya-les') + '</button>'
-            : '') +
-        '</div>' +
-
+      return '<section class="seccio" aria-label="Fotos">' +
+        '<div class="seccio-cap"><h2>Fotos</h2><span class="gravat">Drive privat</span></div>' +
         (quantes
-          ? '<p class="menut">' + quantes + (quantes === 1 ? ' foto guardada' : ' fotos guardades') +
+          ? '<div class="fotos-tira">' +
+              '<span class="fotos-codi" id="seg-fotos-codi">' + ic('amagat') +
+                '<span>' + quantes + (quantes === 1 ? ' FOTO' : ' FOTOS') + ' · ' +
+                (fotosObertes ? 'A LA VISTA' : 'AMAGADES') + '</span></span>' +
+              '<button class="btn btn-menut" data-ulls="1" ' +
+                'aria-controls="seg-tires" aria-expanded="' + (fotosObertes ? 'true' : 'false') + '">' +
+                (fotosObertes ? 'Amaga-les' : 'Ensenya-les') + '</button>' +
+            '</div>' +
+            '<p class="menut fotos-nota">' + quantes + (quantes === 1 ? ' foto guardada' : ' fotos guardades') +
               ' a una carpeta privada del teu Drive. No es mostren fins que ho demanes.</p>'
-          : '<p class="menut">Encara no n\'hi ha cap. Van a una carpeta privada del teu Drive; ' +
+          : '<p class="menut fotos-nota">Encara no n\'hi ha cap. Van a una carpeta privada del teu Drive; ' +
             'aquí només se\'n guarda la referència. Amb dues del mateix angle separades per ' +
             'unes setmanes ja es pot llegir el canvi.</p>') +
 
         /* LA LECTURA. És el que ha de sortir de fer-se les fotos, i per això
            va abans que les imatges i no darrere. */
-        '<div id="seg-ullada">' +
-          (lectura ? '<blockquote class="seg-diu">' + esc(lectura) + '</blockquote>' : '') +
-        '</div>' +
         (quantes
-          ? '<button class="btn btn-secundari" data-mira="' + esc(cur.data) + '" style="width:100%">' +
-              ic('seguiment') + (lectura ? 'Torna-les a mirar' : 'Què hi veus?') + '</button>'
+          ? '<div class="lectura">' +
+              '<p class="gravat">' + (lectura ? 'Lectura desada · IA · ' + esc(curta(cur.data)) : 'Lectura · IA') + '</p>' +
+              '<div id="seg-ullada">' +
+                (lectura ? '<blockquote class="cita"><p>' + esc(lectura) + '</p></blockquote>'
+                         : '<p class="menut" style="margin-top:var(--e2)">Compara la més antiga amb l\'actual de cada angle i et diu què hi veu.</p>') +
+              '</div>' +
+              '<button class="btn" data-mira="' + esc(cur.data) + '">' +
+                (lectura ? 'Torna-les a mirar' : 'Què hi veus?') + '</button>' +
+            '</div>'
           : '') +
 
         '<div id="seg-tires"' + (fotosObertes ? '' : ' hidden') + '>' +
           ANGLES.map(function (a) {
             var amb = h.filter(function (c) { return c.fotos[a[0]]; });
             if (!amb.length) return '';
-            return '<div class="seg-angle"><p class="menut">' + a[1] + '</p>' +
+            return '<div class="seg-angle"><p class="gravat">' + a[1] + '</p>' +
               '<div class="seg-tira">' + amb.map(function (c) {
                 /* LA MIDA VA ESCRITA A L'ETIQUETA i no només a l'estil: la
                    imatge arriba tard i, sense mida, la fila creixia de cop
-                   quan entrava i et movia el que estaves mirant. Són les
-                   mateixes 118×158 que hi posa el full d'estil. */
+                   quan entrava i et movia el que estaves mirant. */
                 return '<figure>' +
                   '<img loading="lazy" width="118" height="158" ' +
                     'alt="' + esc(a[1] + ' del ' + curta(c.data)) + '" ' +
                     (fotosObertes ? 'src' : 'data-src') +
                     '="https://drive.google.com/thumbnail?sz=w320&id=' + esc(c.fotos[a[0]]) + '">' +
-                  /* El boto de treure-la. Petit i a la cantonada, pero de 32
-                     pixels: prou per encertar-lo i prou per no encertar-lo
-                     sense voler mentre passes la tira amb el dit. I no fa
-                     res sense preguntar-ho: una foto del cos d un dia
-                     concret no es pot tornar a fer. */
+                  /* El botó de treure-la: petit a la vista, però de 44 píxels
+                     de toc. I no fa res sense preguntar-ho: una foto del cos
+                     d'un dia concret no es pot tornar a fer. */
                   '<button class="seg-treu" data-treu="' + esc(a[0]) +
                     '" data-dia="' + esc(c.data) + '" data-nom="' + esc(a[1]) +
                     '" aria-label="Treu la foto ' + esc(a[1].toLowerCase() + ' del ' + curta(c.data)) +
@@ -557,12 +689,12 @@ App.registraVista('seguiment', {
           }).join('') +
         '</div>' +
 
-        '<div class="seg-puja">' + ANGLES.map(function (a) {
-          return '<label class="btn btn-secundari">' + ic('mes') + esc(a[1]) +
+        '<div class="seg-puja" role="group" aria-label="Puja una foto nova del ' + esc(curta(cur.data)) + '">' + ANGLES.map(function (a) {
+          return '<label class="btn">' + ic(a[0]) + esc(a[1]) +
             '<input type="file" accept="image/*" hidden data-foto="' + a[0] +
             '" data-data="' + esc(cur.data) + '"></label>';
         }).join('') + '</div>' +
-        '<p class="menut">' + esc(d.comEsMesura.fotos) + '</p>' +
+        '<p class="menut" style="margin-top:var(--e3)">' + esc(d.comEsMesura.fotos) + '</p>' +
       '</section>';
     }
 
@@ -576,15 +708,15 @@ App.registraVista('seguiment', {
       var v = c || { data: d.estat.avui, cinturaValida: true, forca: 0, trail: 0, trailGros: 0 };
 
       var tria = function (nom, etiqueta, opcions, ara) {
-        return '<div class="camp"><label>' + esc(etiqueta) + '</label>' +
+        return '<div class="camp" role="group" aria-labelledby="t-' + nom + '"><span id="t-' + nom + '">' + esc(etiqueta) + '</span>' +
           '<div class="tria-fila">' + opcions.map(function (o) {
             return '<button type="button" class="tria-bt" data-camp="' + nom + '" data-val="' + esc(o) +
-              '"' + (ara === o ? ' aria-pressed="true"' : '') + '>' + esc(o) + '</button>';
+              '" aria-pressed="' + (ara === o ? 'true' : 'false') + '">' + esc(o) + '</button>';
           }).join('') + '</div></div>';
       };
 
       var cos = App.modal(esNou ? 'Control setmanal' : 'Control del ' + curta(v.data),
-        '<form id="f-seg" class="formulari">' +
+        '<form id="f-seg" class="formulari" novalidate>' +
           '<div class="camp"><label for="s-data">Dia</label>' +
             '<input class="entrada" id="s-data" type="date" value="' + esc(v.data) + '" required></div>' +
 
@@ -593,40 +725,40 @@ App.registraVista('seguiment', {
              res. Amb `inputmode=decimal` surt igualment el teclat de numeros al
              telefon, i s'hi val tant la coma com el punt. */
           '<div class="camp"><label for="s-pes">Pes (kg)</label>' +
-            '<input class="entrada" id="s-pes" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" autocomplete="off" ' +
-              'value="' + (v.pes === null || v.pes === undefined ? '' : v.pes) + '">' +
+            '<input class="entrada" id="s-pes" data-primer type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" autocomplete="off" ' +
+              'value="' + (v.pes === null || v.pes === undefined ? '' : coma(v.pes)) + '">' +
             '<p class="menut">' + esc(d.comEsMesura.pes) + '</p></div>' +
 
           '<div class="camp"><label for="s-cintura">Cintura (cm)</label>' +
             '<input class="entrada" id="s-cintura" type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" autocomplete="off" ' +
-              'value="' + (v.cintura === null || v.cintura === undefined ? '' : v.cintura) + '">' +
+              'value="' + (v.cintura === null || v.cintura === undefined ? '' : coma(v.cintura)) + '">' +
             '<p class="menut">' + esc(d.comEsMesura.cintura) + '</p>' +
-            '<label class="seg-check"><input type="checkbox" id="s-cintura-mala"' +
+            '<label class="check"><input type="checkbox" id="s-cintura-mala"' +
               (v.cinturaValida === false ? ' checked' : '') + '> ' +
               'Aquesta mesura no és de fiar (no la comptis)</label></div>' +
 
           /* «DE GROSSES» NO VOLIA DIR RES.
-             Era l'etiqueta del tercer camp i ningú no sabia grosses de què:
-             ni ell, que és qui l'omplia cada divendres. Són les sortides de
-             trail que et deixen buit, i compten a part perquè aquells dies has
-             de menjar més —és l'única raó per la qual el camp existeix. Ara ho
-             diu l'etiqueta i ho acaba de dir la línia de sota, al costat del
-             camp i no en cap pantalla d'ajuda. */
-          '<div class="camp-fila">' +
-            '<div class="camp"><label for="s-forca">Força</label>' +
-              '<input class="entrada" id="s-forca" type="number" min="0" max="14" inputmode="numeric" ' +
-                'value="' + (v.forca === null ? 0 : v.forca) + '"></div>' +
-            '<div class="camp"><label for="s-trail">Trail</label>' +
-              '<input class="entrada" id="s-trail" type="number" min="0" max="14" inputmode="numeric" ' +
-                'value="' + (v.trail === null ? 0 : v.trail) + '"></div>' +
-            '<div class="camp"><label for="s-gros">Llargues</label>' +
-              '<input class="entrada" id="s-gros" type="number" min="0" max="7" inputmode="numeric" ' +
-                'value="' + (v.trailGros === null ? 0 : v.trailGros) + '"></div>' +
+             Són les sortides de trail que et deixen buit, i compten a part
+             perquè aquells dies has de menjar més —és l'única raó per la qual
+             el camp existeix. Ho diu l'etiqueta i ho acaba de dir la línia de
+             sota, al costat del camp i no en cap pantalla d'ajuda. */
+          '<div>' +
+            '<div class="camp-fila">' +
+              '<div class="camp"><label for="s-forca">Força</label>' +
+                '<input class="entrada" id="s-forca" type="number" min="0" max="14" inputmode="numeric" ' +
+                  'value="' + (v.forca === null ? 0 : v.forca) + '"></div>' +
+              '<div class="camp"><label for="s-trail">Trail</label>' +
+                '<input class="entrada" id="s-trail" type="number" min="0" max="14" inputmode="numeric" ' +
+                  'value="' + (v.trail === null ? 0 : v.trail) + '"></div>' +
+              '<div class="camp"><label for="s-gros">Llargues</label>' +
+                '<input class="entrada" id="s-gros" type="number" min="0" max="7" inputmode="numeric" ' +
+                  'value="' + (v.trailGros === null ? 0 : v.trailGros) + '"></div>' +
+            '</div>' +
+            '<p class="menut" style="margin-top:var(--e2)">' +
+              'Sessions de força i sortides de trail de la setmana. De les sortides, quantes ' +
+              'eren llargues o dures —les que et deixen buit—: aquells dies has de menjar més.' +
+            '</p>' +
           '</div>' +
-          '<p class="menut" style="margin:calc(-1 * var(--e2)) 0 0">' +
-            'Sessions de força i sortides de trail de la setmana. De les sortides, quantes ' +
-            'eren llargues o dures —les que et deixen buit—: aquells dies has de menjar més.' +
-          '</p>' +
 
           tria('energia', 'Energia', ['baixa', 'normal', 'alta'], v.energia) +
           tria('son', 'Son', ['malament', 'normal', 'bé'], v.son) +
@@ -636,7 +768,8 @@ App.registraVista('seguiment', {
           '<div class="camp"><label for="s-notes">Notes</label>' +
             '<textarea class="entrada" id="s-notes" rows="2">' + esc(v.notes || '') + '</textarea></div>' +
 
-          '<button class="btn btn-primari" type="submit" style="width:100%">Desa el control</button>' +
+          '<div class="desa-fix"><p class="camp-mal" id="s-mal" role="alert" hidden></p>' +
+          '<button class="btn btn-primari btn-ple" type="submit">Desa el control</button></div>' +
         '</form>');
 
       var tries = { energia: v.energia || '', son: v.son || '', gana: v.gana || '', dieta: v.dieta || '' };
@@ -651,32 +784,49 @@ App.registraVista('seguiment', {
         });
       });
 
+      var mal = cos.querySelector('#s-mal');
+      function diguesQue(text, quin) {
+        mal.textContent = text; mal.hidden = false;
+        var camp = quin && cos.querySelector(quin);
+        if (camp) { try { camp.focus(); } catch (e) {} }
+      }
+
       cos.querySelector('#f-seg').addEventListener('submit', function (ev) {
         ev.preventDefault();
+        mal.hidden = true;
         var bt = cos.querySelector('button[type="submit"]');
-        bt.disabled = true; bt.textContent = 'Desant…';
         var buit = function (id) {
           var x = cos.querySelector(id).value.trim();
           return x === '' ? null : Number(x.replace(',', '.'));
         };
 
+        /* L'ERROR AL COSTAT, I AMB EL CAMP AL DAVANT. Un pes escrit amb lletres
+           o un dia buit es diuen aquí, no amb un missatge a baix de tot. */
+        if (!cos.querySelector('#s-data').value) { diguesQue('Falta el dia del control.', '#s-data'); return; }
+        var malEscrit = ['#s-pes', '#s-cintura'].filter(function (id) {
+          var x = cos.querySelector(id).value.trim();
+          return x !== '' && !/^[0-9]+([.,][0-9]+)?$/.test(x);
+        })[0];
+        if (malEscrit) {
+          diguesQue((malEscrit === '#s-pes' ? 'El pes' : 'La cintura') + ' ha de ser un número, com 78,4.', malEscrit);
+          return;
+        }
+
         /* UN CONTROL BUIT NO ÉS UN CONTROL.
            Amb tots els camps sense omplir, el formulari es desava igualment i
            et deia «Control desat»: al full hi queia una fila amb el dia i res
-           més, i tu no sabies si havies desat alguna cosa o no. */
-        /* Les valoracions (energia, son, gana, dieta) arriben preomplertes amb
-           les de l últim control, o sigui que no serveixen per saber si has
-           posat res: el que compta és una mesura o una nota escrita ara. */
+           més, i tu no sabies si havies desat alguna cosa o no.
+           Les valoracions (energia, son, gana, dieta) no serveixen per saber si
+           has posat res: el que compta és una mesura o una nota escrita ara. */
         var teMesura = ['#s-pes', '#s-cintura', '#s-forca', '#s-trail', '#s-gros']
           .some(function (id) { return cos.querySelector(id).value.trim() !== ''; }) ||
           cos.querySelector('#s-notes').value.trim() !== '';
         if (!teMesura) {
-          bt.disabled = false; bt.textContent = 'Desa el control';
-          App.brindis('Posa-hi almenys una mesura o una nota.', 'error');
-          try { cos.querySelector('#s-pes').focus(); } catch (e) {}
+          diguesQue('Posa-hi almenys una mesura o una nota.', '#s-pes');
           return;
         }
 
+        bt.disabled = true; bt.dataset.carregant = '1';
         crida('seguiment', 'desa', {
           data: cos.querySelector('#s-data').value,
           pes: buit('#s-pes'),
@@ -691,8 +841,8 @@ App.registraVista('seguiment', {
           triat = r.data;
           carrega(true);
         }).catch(function (err) {
-          bt.disabled = false; bt.textContent = 'Desa el control';
-          App.brindis(err.message, 'error');
+          bt.disabled = false; bt.dataset.carregant = '0';
+          diguesQue(err.message);
         });
       });
     }
@@ -701,10 +851,9 @@ App.registraVista('seguiment', {
     function lliga() {
       GrafSeg.dibuixa(arrel);
       /* Si canvies l'amplada —girar el telèfon, obrir-ho a l'escriptori— les
-         coordenades d'abans ja no valen. Es tornen a calcular, i prou: no és
-         cap animació, és el mateix dibuix a la mida nova. */
+         coordenades d'abans ja no valen. Es tornen a calcular, i prou. */
       if (!arrel._redibuixa) {
-        arrel._redibuixa = function () { GrafSeg.dibuixa(arrel); };
+        arrel._redibuixa = function () { if (arrel.isConnected) GrafSeg.dibuixa(arrel); };
         window.addEventListener('resize', arrel._redibuixa);
       }
 
@@ -721,25 +870,40 @@ App.registraVista('seguiment', {
       });
 
       arrel.querySelectorAll('[data-va]').forEach(function (b) {
-        b.addEventListener('click', function () { triat = b.dataset.va; pinta(); });
+        b.addEventListener('click', function () {
+          triat = b.dataset.va; pinta();
+          var v = arrel.querySelector('.veredicte');
+          if (v) {
+            var redueix = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+            window.scrollTo({ top: v.getBoundingClientRect().top + window.scrollY - 8, behavior: redueix ? 'auto' : 'smooth' });
+          }
+        });
+      });
+
+      var mes = arrel.querySelector('[data-tots]');
+      if (mes) mes.addEventListener('click', function () {
+        tots = !tots;
+        App.mantenintLaVista(pinta);
+        var b = arrel.querySelector('[data-tots]');
+        if (b) b.focus({ preventScroll: true });
       });
 
       var c = arrel.querySelector('[data-comenta]');
       if (c) c.addEventListener('click', function () {
         var caixa = arrel.querySelector('#seg-comentari');
         c.disabled = true; c.textContent = 'Pensant…';
-        caixa.innerHTML = '<div class="esquelet" style="height:64px"></div>';
+        caixa.innerHTML = '<div class="esquelet" style="height:96px;margin-top:var(--e4)"></div>';
         crida('seguiment', 'comenta', { data: c.dataset.comenta }).then(function (r) {
-          caixa.innerHTML = '<blockquote class="seg-diu">' + esc(r.comentari) + '</blockquote>' +
-            (r.tallat ? '<p class="seg-avis" data-n="avis">' + ic('avis') +
-              '<span>S\'ha quedat a mitges. Torna-ho a demanar.</span></p>' : '');
+          caixa.innerHTML = '<blockquote class="cita"><p>' + esc(r.comentari) + '</p>' +
+              '<footer class="gravat">Entrenador · IA · ' + esc(curta(c.dataset.comenta)) + '</footer></blockquote>' +
+            (r.tallat ? '<p class="cita-avis" role="alert">S\'ha quedat a mitges. Torna-ho a demanar.</p>' : '');
           /* El botó només se'n va si la resposta és sencera: si s'ha tallat,
              el que li fa falta és justament tornar-hi. */
           if (!r.tallat) c.remove();
-          else { c.disabled = false; c.innerHTML = ic('mapa') + 'Torna-hi'; }
+          else { c.disabled = false; c.textContent = 'Torna-hi'; }
         }).catch(function (err) {
           caixa.innerHTML = '';
-          c.disabled = false; c.innerHTML = ic('mapa') + 'Què en penses?';
+          c.disabled = false; c.textContent = 'Què en penses?';
           App.brindis(err.message, 'error');
         });
       });
@@ -761,6 +925,8 @@ App.registraVista('seguiment', {
         tires.hidden = !fotosObertes;
         ulls.textContent = fotosObertes ? 'Amaga-les' : 'Ensenya-les';
         ulls.setAttribute('aria-expanded', fotosObertes ? 'true' : 'false');
+        var codi = arrel.querySelector('#seg-fotos-codi span');
+        if (codi) codi.textContent = codi.textContent.replace(/· .*$/, '· ' + (fotosObertes ? 'A LA VISTA' : 'AMAGADES'));
       });
 
       /* LA LECTURA DE LES FOTOS. Costa una petició i uns quants segons —hi van
@@ -772,21 +938,20 @@ App.registraVista('seguiment', {
         var caixa = arrel.querySelector('#seg-ullada');
         var dia = mira.dataset.mira;
         mira.disabled = true; mira.textContent = 'Mirant-les…';
-        caixa.innerHTML = '<div class="esquelet" style="height:96px"></div>';
+        caixa.innerHTML = '<div class="esquelet" style="height:96px;margin-top:var(--e3)"></div>';
         crida('seguiment', 'analitzaFotos', { data: dia }).then(function (r) {
           /* UNA LECTURA A MITGES NO ES DESA i es diu que ho és. Guardar-la
              voldria dir ensenyar-li una frase tallada cada cop que obrís la
              pantalla, i sense saber-ho ell se la creuria sencera. */
           if (!r.tallat) Cau.set('seg.ullada.' + dia, r.comentari);
-          caixa.innerHTML = '<blockquote class="seg-diu">' + esc(r.comentari) + '</blockquote>' +
-            (r.tallat ? '<p class="seg-avis" data-n="avis">' + ic('avis') +
-              '<span>S\'ha quedat a mitges. Torna-ho a demanar.</span></p>' : '');
+          caixa.innerHTML = '<blockquote class="cita"><p>' + esc(r.comentari) + '</p></blockquote>' +
+            (r.tallat ? '<p class="cita-avis" role="alert">S\'ha quedat a mitges. Torna-ho a demanar.</p>' : '');
           mira.disabled = false;
-          mira.innerHTML = ic('seguiment') + 'Torna-les a mirar';
+          mira.textContent = 'Torna-les a mirar';
         }).catch(function (err) {
           caixa.innerHTML = '';
           mira.disabled = false;
-          mira.innerHTML = ic('seguiment') + 'Què hi veus?';
+          mira.textContent = 'Què hi veus?';
           App.brindis(err.message, 'error');
         });
       });
@@ -803,14 +968,14 @@ App.registraVista('seguiment', {
               esc(curta(b.dataset.dia)) + '.</p>' +
             '<p class="menut">El fitxer va a la paperera del teu Drive i el pots ' +
               'recuperar durant trenta dies. Del control, en desapareix ara.</p>' +
-            '<div class="formulari">' +
-              '<button class="btn btn-perill" data-si="1" style="width:100%">Treu-la</button>' +
-              '<button class="btn btn-secundari" data-no="1" style="width:100%">Deixa-la</button>' +
+            '<div class="formulari" style="margin-top:var(--e5)">' +
+              '<button class="btn btn-perill btn-ple" data-si="1">Treu-la</button>' +
+              '<button class="btn btn-ple" data-no="1">Deixa-la</button>' +
             '</div>');
           cos.querySelector('[data-no]').addEventListener('click', App.tancaModal);
           cos.querySelector('[data-si]').addEventListener('click', function () {
             var bt = cos.querySelector('[data-si]');
-            bt.disabled = true; bt.textContent = 'Traient-la…';
+            bt.disabled = true; bt.dataset.carregant = '1';
             crida('seguiment', 'esborraFoto', { data: b.dataset.dia, angle: b.dataset.treu })
               .then(function (r) {
                 App.tancaModal();
@@ -823,7 +988,7 @@ App.registraVista('seguiment', {
                 carrega(true);
               })
               .catch(function (err) {
-                bt.disabled = false; bt.textContent = 'Treu-la';
+                bt.disabled = false; bt.dataset.carregant = '0';
                 App.brindis(err.message, 'error');
               });
           });
@@ -876,11 +1041,14 @@ App.registraVista('seguiment', {
     // ----------------------------------------------------------------- càrrega
     function carrega(refresca) {
       var cau = Cau.get('seguiment', null);
-      if (cau && !refresca) { d = cau; pinta(); }
+      if (cau && !refresca) { d = cau; pinta(); llegeixSetmanes(false); }
       else if (!cau) arrel.innerHTML = Comp.carregant(3);
 
       crida('seguiment', 'pantalla', {}).then(function (r) {
-        d = r; Cau.set('seguiment', r); pinta();
+        d = r; Cau.set('seguiment', r);
+        if (!arrel.isConnected) return;
+        App.mantenintLaVista(pinta);
+        llegeixSetmanes(true);
       }).catch(function (err) {
         if (d) { App.brindis('Sense connexió: dades del telèfon', 'error'); return; }
         arrel.innerHTML = Comp.error(err, true);

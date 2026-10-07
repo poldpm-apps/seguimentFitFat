@@ -3,39 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#e8eef0" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#05080b" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#e8eef0">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>El cos</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="mask-icon" href="favicon.svg" color="#4fd6e0">
+  <link rel="mask-icon" href="favicon.svg" color="#054a57">
   <!--INSTALLACIO-->
   <?!= include('ui_estil'); ?>
 </head>
 <body>
 <!--
-  THESIS: la teva vida registrada és terreny, i el compliment és altitud. Refusa
-    la graella de targetes arrodonides amb cercle de progrés i flama de ratxa.
-  OWN-WORLD: full de mapa topogràfic 1:25.000. Paper neutre fred amb marc doble,
-    quadrícula UTM blava, corbes de nivell en sienna, rampa hipsomètrica de vall
-    a cim com a únic sistema de color, simbologia dibuixada (cim, font, refugi,
-    fita, creu, cova, arbre, pont, gual, mina), cotes en itàlica tabular,
-    retolació de marge en versaletes espaiades. Cantonades rectes: els mapes no
-    en tenen de rodones. Tipografia del sistema per obligació — una font web
-    afegiria latència a l'arrencada, que és el risc número u del projecte.
-  STORY: al matí obro i veig el marge del full: una franja per hàbit amb el seu
-    símbol i les seves corbes. En toco les que he fet i marxo. Al vespre, a
-    l'ordinador, miro el full sencer i hi llegeixo el mes com un relleu.
-  FIRST VIEWPORT: mòbil — capçalera amb data i fletxes de dia, i sota la columna
-    de franges de terreny a amplada completa. Escriptori — dues columnes: el
-    control del dia a l'esquerra, el full de mes amb el relleu a la dreta.
-  FORM: full de mapa amb marge i llegenda, direcció triada per l'usuari per sobre
-    del sorteig (seed cb46e09c, assignat 6 de 7: targeta de control).
-  TÈCNICA: les corbes de nivell són SVG generat amb marching squares sobre el camp
-    de compliment (ui_relleu.html). No és una textura: si canvies una dada, el
-    relleu canvia.
+  THESIS: cada control setmanal és una carena; dotze setmanes apilades són el pols
+    del cos, i la d'ara, davant i fosca, és el veredicte. Refusa el tauler de
+    fitness amb anells i targetes, i el mapa topogràfic de JEFE.
+  OWN-WORLD: catàleg (Factory Records, Saville) sobre el camp pàl·lid de la icona:
+    #e8eef0, tinta #0d191e, la rampa #bcced4 · #7ab5c1 · #1c8496 · #054a57 de vell
+    i clar a ara i fosc; filets i alineació, cap targeta; números de catàleg
+    (CTRL 041); versaletes gravades; Hanken Grotesk amb xifres tabulars; l'ocre
+    #85580f, només per al que s'ha de corregir o vigilar.
+  STORY: diumenge a les sis, en dejú: obre l'app, veu la carena d'aquesta setmana
+    sobre les velles, llegeix el veredicte i les quatre xifres, i amb el botó fosc
+    fa el control. Durant la setmana passa la captura de Strava i la confirma.
+  FIRST VIEWPORT: capçalera amb la marca i «Control»; el reclam si toca; «CTRL 041 ·
+    27 set», el veredicte gran i la pila de carenes; les quatre xifres just a sota.
+  FORM: B, «el pols de les setmanes», triada per en Pol entre tres esbossos reals
+    (seed de direcció 4c48c7d4).
   FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
     review, the verdict, and DESIGN.md
 -->
@@ -71,7 +65,6 @@
 
 <?!= include('ui_marca'); ?>
 <?!= include('ui_app'); ?>
-<?!= include('ui_relleu'); ?>
 <?!= include('ui_notifica'); ?>
 <?!= include('vista_inici'); ?>
 <?!= include('vista_seguiment'); ?>

@@ -276,6 +276,23 @@ var Entrenaments = (function () {
     return r;
   }
 
+  /**
+   * LA SETMANA DIA A DIA: set xifres, de dilluns a diumenge, amb els km-esforç
+   * de cada dia. És el que dibuixa cada carena de la pantalla del seguiment.
+   * La força no hi suma —no té km-esforç— i un dia sense res és un zero, no
+   * un forat: aquell dia no vas sortir.
+   */
+  function perDies_(s) {
+    var d = [0, 0, 0, 0, 0, 0, 0];
+    s.llista.forEach(function (x) {
+      if (x.kmEsforc === null) return;
+      for (var i = 0; i < 7; i++) {
+        if (Utils.sumaDies(s.dilluns, i) === x.data) { d[i] += x.kmEsforc; break; }
+      }
+    });
+    return d.map(function (v) { return Math.round(v * 10) / 10; });
+  }
+
   /** Les setmanes que tenen alguna sessió, de la més recent a la més antiga. */
   function setmanes(quantes) {
     var h = sessions();
@@ -305,7 +322,8 @@ var Entrenaments = (function () {
     for (var i = 0; i < 12; i++) {
       var s = setmana(cur, h);
       corba.unshift({ dilluns: cur, kmEsforc: s.kmEsforc, sessions: s.sessions,
-                      desnivell: s.desnivell, passos: p[cur] ? p[cur].total : null });
+                      desnivell: s.desnivell, passos: p[cur] ? p[cur].total : null,
+                      dies: perDies_(s) });
       cur = Utils.sumaDies(cur, -7);
     }
 

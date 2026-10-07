@@ -1932,19 +1932,17 @@ console.log('\nEl full índex: cap apartat es pot quedar sense porta');
   cal('i el capçal les recull, que si no desapareixerien',
       /function eines\(\)[\s\S]{0,140}m\.secundari/.test(inici) && /class="cap-eina"/.test(inici));
 
-  /* Les pantalles que no són de cap mòdul s'han d'afegir a mà, i per tant són
-     les que es poden oblidar. Aquestes dues han de tenir porta sempre. */
-  cal('el dia hi és, i per partida doble: la data i el botó',
-      (inici.match(/data-ves="dia"/g) || []).length >= 2, inici.match(/data-ves="dia"/g) + '');
-  cal('i la setmana també', /data-ves="setmana"/.test(inici));
+  /* CAP PORTA CAP A UNA PANTALLA QUE NO HI ÉS. A JEFE l'índex portava al dia
+     i a la setmana; aquí no existeixen, i un botó cap allà tornava a l'inici
+     sense dir res. Les portes surten del registre de mòduls i prou. */
+  const fixes = (inici.match(/data-ves="([a-z]+)"/g) || []);
+  cal('cap porta escrita a mà cap a una pantalla que no existeix', fixes.length === 0, fixes.join(', '));
 
-  /* I EL FONS DE CORBES. És l'única cosa del disseny que en Pol ha demanat
-     expressament que no es perdi, i viu en una línia que és fàcil que caigui
-     en una neteja: sense ella la pàgina segueix funcionant i es veu plana. */
-  cal('el fons de corbes de nivell hi és', /Relleu\.fons\(/.test(inici));
+  /* I LA MARCA A DALT: les carenes de la icona, les quatre capes. És el que
+     lliga l'inici amb la pila de carenes del seguiment. */
+  cal("l'inici porta la marca de les carenes", /function marca\(\)/.test(inici) && /marca\(\) \+/.test(inici));
   const estil = fs.readFileSync('apps-script/ui_estil.html', 'utf8');
-  cal('i té on posar-se, darrere de tot i sense agafar cap toc',
-      /\.reticula \{[^}]*position: fixed[^}]*pointer-events: none/.test(estil));
+  cal('i ja no hi queda res del mapa de JEFE', !/reticula|Relleu|corba-mestra/.test(estil + inici));
 
   /* I LA LLISTA DEL MIRALL NO POT ANAR PER LLIURE. S'ha desincronitzat dues
      vegades —primer hi faltava l'escola, després la memòria—, i des del
@@ -2128,6 +2126,58 @@ console.log('\nEl cos de punta a punta: el control, la sessió i la càrrega');
       prop.sessions.map((s) => s.dubtosa).join(','));
   const conf = ctx.Entrenaments.confirmaCaptura({ sessions: [prop.sessions[0]] });
   cal('en confirmar, entra només el que has deixat', conf.desats === 1 && fulls.Entrenaments.length === abans + 1);
+}
+
+// --------------------------------------------- el disseny nou: el que no pot caure
+/* «El pols de les setmanes», triat per en Pol entre tres esbossos. Les coses
+   que el fan ser el que és i que una neteja es podria endur sense que res
+   deixés de funcionar. */
+console.log('\nEl disseny: les carenes són de debò i la paleta és la de la icona');
+{
+  const seg = fs.readFileSync('apps-script/vista_seguiment.html', 'utf8');
+  const ent = fs.readFileSync('apps-script/vista_entrenaments.html', 'utf8');
+  const estil = fs.readFileSync('apps-script/ui_estil.html', 'utf8');
+  const srv = fs.readFileSync('apps-script/40_Mod_Entrenaments.gs', 'utf8');
+
+  /* LES CARENES. Cada una és la càrrega dia a dia d'una setmana, i ve del
+     servidor dels entrenaments. Ni un cim inventat: l'esbós feia servir
+     soroll aleatori per fer-les boniques, i a l'app no n'hi pot haver. */
+  cal('el servidor dona la càrrega dia a dia de cada setmana', /dies: perDies_\(s\)/.test(srv));
+  cal('les carenes es dibuixen amb això', /x\.dies/.test(seg) && /setmanes\[dillunsDe\(c\.data\)\]/.test(seg));
+  cal("i no hi ha res a l'atzar al dibuix", !/Math\.random/.test(seg + ent));
+  const ctx = carregaTotElServidor();
+  const fulls = { Entrenaments: [
+    { id: 'e1', data: '2026-09-22', mena: 'trail', titol: 'A', km: 10, desnivell: 500 },
+    { id: 'e2', data: '2026-09-27', mena: 'trail', titol: 'B', km: 6, desnivell: 100 },
+    { id: 'e3', data: '2026-09-24', mena: 'forca', titol: 'C', minuts: 40 }
+  ] };
+  ctx.Log = { info() {}, avis() {}, error() {} };
+  ctx.Dades = { llegeix: (n) => (fulls[n] || []).slice() };
+  ctx.Utils.avui = () => '2026-09-28';
+  const dos = (n) => ('0' + n).slice(-2);
+  ctx.Utilities.formatDate = (d) => d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate());
+  const corba = ctx.Entrenaments.pantalla('2026-09-21').corba;
+  const dies = corba[corba.length - 1].dies;
+  cal('i són els dies bons: dimarts 15, diumenge 7, la força no hi suma',
+      JSON.stringify(dies) === '[0,15,0,0,0,0,7]', JSON.stringify(dies));
+
+  /* LA PALETA ÉS LA DE LA ICONA, i en Pol va dir que li agrada molt. */
+  cal('la paleta és la de la icona',
+      ['#e8eef0', '#bcced4', '#7ab5c1', '#1c8496', '#054a57', '#0d191e'].every((c) => estil.includes(c)));
+  cal("i un sol color d'avís, l'ocre", /--ocre:\s+#85580f/.test(estil));
+  cal('la font és dins del repositori, no a fora', /url\("fonts\/hanken-grotesk\.woff2"\)/.test(estil) &&
+      fs.existsSync('fonts/hanken-grotesk.woff2') && !/fonts\.googleapis/.test(estil));
+  cal('i el treballador de servei la desa per obrir sense xarxa',
+      /\.\/fonts\/hanken-grotesk\.woff2/.test(fs.readFileSync('sw.js', 'utf8')));
+  cal("el moviment es respecta quan es demana que no n'hi hagi", /prefers-reduced-motion: reduce/.test(estil));
+
+  /* EL FORMULARI DE LA SESSIÓ: kcal, pulsacions i notes, que el servidor ja
+     guardava i la pantalla no deixava escriure. En corregir una sessió a mà,
+     a més, s'esborraven: ara viatgen. */
+  cal('el formulari de la sessió té kcal, pulsacions i notes',
+      /id="e-kcal"/.test(ent) && /id="e-pul"/.test(ent) && /id="e-notes"/.test(ent));
+  cal('i els envia en desar',
+      /kcal: buit\('#e-kcal'\), pulsacions: buit\('#e-pul'\)/.test(ent) && /notes: cos\.querySelector\('#e-notes'\)/.test(ent));
 }
 
 console.log(falles ? '\n' + falles + ' falla(des).\n' : '\nTot correcte.\n');

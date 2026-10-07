@@ -1,25 +1,26 @@
 <script>
 /* =========================================================================
-   JEFE — LA PÀGINA PRINCIPAL
-   =========================================================================
+   EL COS — LA PÀGINA D'INICI
 
-   El tauler d'apartats, que abans vivia dins d'un calaix de la conversa, i
-   la data cap a la pàgina del dia. Res més.
+   On és cada cosa i poder-hi anar, i res més. Dues portes —el seguiment i
+   els entrenaments—, la marca a dalt i, si aquest aparell encara no rep
+   avisos, la crida per activar-los: l'avís del control del diumenge és
+   l'únic de l'app, i si no arriba no te n'adones.
 
-   HI VA HAVER UNA VERSIÓ AMB TERRENY —cada apartat amb les seves corbes,
-   més amunt si estaves al dia— i en Pol la va tombar de seguida: no volia
-   entendre unes ones dins d'una targeta ni li ajudaven a res. Tenia raó.
-   Una metàfora que s'ha d'explicar és una metàfora que no funciona, i el
-   que ell necessita en obrir l'app és saber on és cada cosa i poder-hi
-   anar.
-
-   EL QUE SÍ QUE ES QUEDA són les corbes de nivell DEL FONS. Són el que fa
-   que això sembli aquesta app i no una altra, i no demanen res: no s'han de
-   llegir ni volen dir res que no puguis veure en un altre lloc.
+   LA MARCA A DALT ÉS LA ICONA EN GRAN: les carenes de les setmanes, la
+   d'ara fosca al davant. No és decoració: és el mateix dibuix que la pila
+   de carenes del seguiment, i és el que fa que aquesta app sigui aquesta.
    ========================================================================= */
 
 App.registraVista('inici', {
   render: function (arrel) {
+
+    /* El que fa cada porta, en una línia. Ho diu la pantalla i no el mòdul
+       perquè és com en parla aquesta app; un mòdul nou entra sense línia. */
+    var QUE_HI_HA = {
+      seguiment: 'El control setmanal: pes, cintura, força, trail i fotos.',
+      entrenaments: 'Les sessions, el km-esforç de la setmana i els passos.'
+    };
 
     function ambPantalla() {
       return (Cau.get('moduls', []) || []).filter(function (m) {
@@ -29,53 +30,33 @@ App.registraVista('inici', {
     function apartats() {
       return ambPantalla().filter(function (m) { return !m.secundari; });
     }
-    /* Les eines de dins —què sap de tu, què ha vist creuant dades—. Hi entra
-       molt de tant en tant, i a la graella principal ocupaven el mateix que
-       els hàbits o les finances, que és on va cada dia. Van al marge del
-       capçal amb la icona i prou. Ho diu el mòdul, no aquesta pantalla: si
-       demà en neix un altre d'aquesta mena, es col·loca sol. */
+    /* Les eines de dins, si mai n'hi ha cap: al capçal amb la icona i prou.
+       Ho diu el mòdul, no aquesta pantalla. */
     function eines() {
       return ambPantalla().filter(function (m) { return m.secundari; });
     }
 
-    function reixa(l) {
-      return '<div class="reixa-apartats">' +
-        /* EL DIA I LA SETMANA VAN PRIMER I JUNTS. Cap dels dos és un mòdul:
-           són les dues respostes a la mateixa pregunta a dues distàncies
-           —«què he de tenir en compte ara» i «quan ho faré»— i per això es
-           miren de costat i no barrejats amb els apartats, que són llocs on
-           vas a treballar. */
-        /* Només si hi són. En aquesta app no hi ha ni la pàgina del dia ni la
-           de la setmana —eren de JEFE— i un botó cap a una pantalla que no
-           existeix tornava a l'inici sense dir res. */
-        '<div class="apartats-quan">' +
-          (App.vistes.dia
-            ? '<button class="apartat viu apartat-ample" data-ves="dia">' +
-                ic('dia') + '<span>El dia</span></button>'
-            : '') +
-          (App.vistes.setmana
-            ? '<button class="apartat viu apartat-ample" data-ves="setmana">' +
-                ic('setmana') + '<span>La setmana</span></button>'
-            : '') +
-        '</div>' +
-        l.map(function (m) {
-          return '<button class="apartat viu" data-ves="' + esc(m.id) + '">' +
-            ic(m.icona || 'modul') +
-            '<span>' + esc(m.nom) + '</span>' +
-          '</button>';
-        }).join('') +
-      '</div>';
+    function portes(l) {
+      if (!l.length) {
+        return '<div class="estat">' + ic('cos', 'ic-g') +
+          '<h2>Encara no sé què hi ha</h2>' +
+          '<p>Quan l\'app parli amb el teu servidor, aquí sortiran el seguiment i els entrenaments.</p>' +
+          '<button class="btn btn-primari" data-connecta-ara="1">Connecta</button>' +
+        '</div>';
+      }
+      return '<nav class="portes" aria-label="Apartats">' + l.map(function (m) {
+        return '<button class="porta" data-ves="' + esc(m.id) + '">' +
+          ic(m.icona || 'modul') +
+          '<span><span class="porta-nom">' + esc(m.nom) + '</span>' +
+            (QUE_HI_HA[m.id] ? '<span class="porta-que">' + esc(QUE_HI_HA[m.id]) + '</span>' : '') +
+          '</span>' +
+          '<svg class="ic fletxa" aria-hidden="true"><use href="#ic-dreta"/></svg>' +
+        '</button>';
+      }).join('') + '</nav>';
     }
 
     /**
      * «NO REBO ELS AVISOS QUE HAURIA DE REBRE.»
-     *
-     * I era veritat. El mòdul `Notificacions` sabia fer-ho tot i no el
-     * cridava ningú: no hi havia cap botó a cap pantalla. L'ordinador
-     * constava registrat perquè allà el permís s'havia donat pel seu compte,
-     * i llavors `Notificacions.actualitza()` l'apunta sol a cada obertura.
-     * Al mòbil, sense permís, aquella funció surt per la porta del darrere a
-     * la primera línia i no hi torna. Cap error, cap senyal: silenci.
      *
      * La condició és el PERMÍS i no la fitxa, a posta. Un cop donat el
      * permís, la fitxa se la mira `actualitza()` cada cop que obres l'app i
@@ -88,7 +69,7 @@ App.registraVista('inici', {
       if (p === 'granted') return '';
 
       var negat = p === 'denied';
-      return '<div class="crida-avisos">' +
+      return '<section class="crida-avisos" aria-label="Avisos en aquest aparell">' +
         '<svg class="ic" aria-hidden="true"><use href="#ic-campana"/></svg>' +
         '<div>' +
           '<b>Aquest aparell no rep avisos</b>' +
@@ -97,11 +78,10 @@ App.registraVista('inici', {
               'si tens l\'app instal·lada, mantén premuda la icona → Informació de ' +
               'l\'app → Notificacions. Al navegador, el cadenat de la barra ' +
               'd\'adreces → Notificacions → Permet.'
-            : 'Els recordatoris, l\'agenda del dia i els avisos del banc no ' +
-              'et poden arribar aquí fins que ho activis.') + '</p>' +
+            : 'L\'avís del control del diumenge al matí no t\'arribarà aquí fins que ho activis.') + '</p>' +
           (negat ? '' : '<button class="btn btn-primari" data-avisos>Activa els avisos</button>') +
         '</div>' +
-      '</div>';
+      '</section>';
     }
 
     /* El permís s'ha de demanar SEMPRE des d'un toc: si no, Chrome el denega
@@ -125,33 +105,45 @@ App.registraVista('inici', {
       });
     }
 
+    /* LA MARCA EN GRAN. Les quatre carenes de la icona, de la més vella i clara
+       a la d'ara, fosca i més gruixuda, sobre l'horitzó. */
+    function marca() {
+      var P = [[2.8,20.2],[6.2,15],[9.8,13.6],[10.4,12.4],[12,7.6],[13.6,12.4],[14.2,13.6],[17.8,15],[21.2,20.2]];
+      var capes = [[1.3, 'var(--t1)', 1.6], [1.2, 'var(--t2)', 1.8], [1.1, 'var(--t3)', 2], [1, 'var(--t4)', 3.4]];
+      var d = capes.map(function (c) {
+        var K = c[0];
+        var cami = 'M' + P.map(function (p) {
+          var x = 12 + K * (p[0] - 12), y = 20.2 + K * (p[1] - 20.2);
+          return (Math.round((90 + 7.5 * (x - 12)) * 10) / 10) + ' ' + (Math.round(7.5 * (y - 3.2) * 10) / 10);
+        }).join(' L');
+        return '<path d="' + cami + '" stroke="' + c[1] + '" stroke-width="' + c[2] + '"/>';
+      }).join('');
+      return '<svg class="inici-marca" viewBox="0 0 180 130" aria-hidden="true">' +
+        '<g fill="none" stroke-linejoin="round" stroke-linecap="round">' + d + '</g>' +
+        '<path d="M2 127.5H178" stroke="var(--tinta)" stroke-width="2.4"/></svg>';
+    }
+
     function pinta(l) {
-      var avui = fmt.avui();
       var t = eines();
       arrel.innerHTML =
-        '<div class="reticula" id="reticula" aria-hidden="true"></div>' +
-        '<header class="capcalera cap-inici">' +
-          '<button class="dia-porta" data-ves="dia" aria-label="Obre la pàgina del dia">' +
-            '<p class="marge">' + esc(fmt.relativa(avui)) + '</p>' +
-            '<h1>' + esc(fmt.llarga(avui)) + '</h1>' +
-          '</button>' +
-          (t.length
-            ? '<div class="cap-eines">' + t.map(function (m) {
-                /* Sense text: no hi cap i no cal. El nom hi és per a qui
-                   escolta la pantalla i per si t'hi atures a sobre. */
-                return '<button class="cap-eina" data-ves="' + esc(m.id) + '"' +
-                  ' aria-label="' + esc(m.nom) + '" title="' + esc(m.nom) + '">' +
-                  ic(m.icona || 'modul') + '</button>';
-              }).join('') + '</div>'
-            : '') +
+        '<header class="capcalera">' +
+          '<div class="cap-fila">' +
+            '<span class="marca">' + ic('cos') + '<span class="gravat tinta">El cos</span></span>' +
+            (t.length
+              ? '<div class="cap-eines">' + t.map(function (m) {
+                  return '<button class="cap-eina" data-ves="' + esc(m.id) + '"' +
+                    ' aria-label="' + esc(m.nom) + '" title="' + esc(m.nom) + '">' +
+                    ic(m.icona || 'modul') + '</button>';
+                }).join('') + '</div>'
+              : '') +
+          '</div>' +
         '</header>' +
-        '<div class="pagina">' + cridaAvisos() + reixa(l) + '</div>';
-
-      /* Les corbes del fons es generen un sol cop i la llavor és fixa: el SVG
-         escala sol amb el contenidor i així no balla a cada repintada. */
-      var r = arrel.querySelector('#reticula');
-      if (r) r.innerHTML = Relleu.fons(1000, 1000,
-        { color: 'var(--corba)', gruix: 1, nivells: 14 });
+        '<div class="pagina inici">' +
+          marca() +
+          '<h1>El cos</h1>' +
+          '<p class="inici-lema">El control de cada diumenge i els entrenaments que l\'expliquen.</p>' +
+          cridaAvisos() + portes(l) +
+        '</div>';
 
       arrel.querySelectorAll('[data-ves]').forEach(function (b) {
         b.addEventListener('click', function () { App.ves(b.dataset.ves); });
@@ -165,15 +157,12 @@ App.registraVista('inici', {
     pinta(apartats());
 
     /* I ES TORNA A PINTAR SEMPRE que arribi la llista, sense comparar si ha
-       canviat. La comparació semblava una economia i era un error d'esperar:
-       si el que hi havia desat venia d'una versió anterior —sense saber
-       encara quins mòduls són eines de dins— sortia igual i no es corregia
-       fins que algú canviés un mòdul. Repintar una graella de tretze botons
-       no costa res. */
+       canviat: si el que hi havia desat venia d'una versió anterior, sortia
+       igual i no es corregia mai. */
     crida('nucli', 'moduls', {}).then(function (d) {
       if (!d || !d.moduls) return;
       Cau.set('moduls', d.moduls);
-      pinta(apartats());
+      if (arrel.isConnected) pinta(apartats());
     }).catch(function () { /* sense connexió, el que hi ha desat serveix igual */ });
   }
 });

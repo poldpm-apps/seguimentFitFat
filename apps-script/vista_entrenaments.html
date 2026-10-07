@@ -1,5 +1,5 @@
 <script>
-/* JEFE — MÒDUL · Entrenaments
+/* EL COS — Entrenaments
 
    LA XIFRA QUE MANA ÉS LA CÀRREGA, no el nombre de sortides. Tot el que hi ha
    en aquesta pantalla està ordenat per aquesta idea: primer els quilòmetres
@@ -51,16 +51,17 @@ App.registraVista('entrenaments', {
     // ------------------------------------------------------------ capçalera
     function capcalera() {
       var s = d.setmana;
-      return '<header class="capcalera"><div class="capcalera-fila">' +
-        '<button class="btn btn-fantasma btn-icona" data-torna="1" aria-label="Torna al full índex">' +
-          ic('mapa', 'ic-p') + '</button>' +
-        '<div style="flex:1;min-width:0">' +
-          '<h1 style="font-size:1.0625rem;margin:0">Entrenaments</h1>' +
-          '<p class="marge" style="margin:2px 0 0">' +
-            esc(curta(s.dilluns) + ' — ' + curta(s.fins)) + '</p>' +
+      return '<header class="capcalera">' +
+        '<div class="cap-fila">' +
+          '<button class="btn btn-icona" data-torna="1" aria-label="Torna a l\'inici">' + ic('esquerra') + '</button>' +
+          '<span class="marca">' + ic('cos') + '<span class="gravat tinta">El cos</span></span>' +
+          '<button class="btn btn-primari" data-captura="1" aria-haspopup="dialog">' + ic('captura') + 'Captura</button>' +
         '</div>' +
-        '<button class="btn btn-primari" data-captura="1">' + ic('captura') + 'Captura</button>' +
-      '</div></header>';
+        '<div class="cap-titol">' +
+          '<h1>Entrenaments</h1>' +
+          '<p>' + esc(curta(s.dilluns) + ' — ' + curta(s.fins)) + '</p>' +
+        '</div>' +
+      '</header>';
     }
 
     // ----------------------------------------------------------------- pinta
@@ -73,36 +74,36 @@ App.registraVista('entrenaments', {
 
           /* LA NAVEGACIÓ PER SETMANES. Fletxes de debò i no un calendari: el
              que fas és mirar la d'abans, no saltar al març. */
-          '<div class="ent-nav">' +
-            '<button class="btn btn-fantasma btn-icona" data-set="' + esc(suma(s.dilluns, -7)) +
-              '" aria-label="Setmana anterior">' + ic('esquerra', 'ic-p') + '</button>' +
-            '<span class="marge">' + esc(esAquesta ? 'aquesta setmana' : curta(s.dilluns)) + '</span>' +
-            '<button class="btn btn-fantasma btn-icona" data-set="' + esc(suma(s.dilluns, 7)) +
+          '<nav class="setmana-nav" aria-label="Setmana">' +
+            '<button class="btn btn-icona" data-set="' + esc(suma(s.dilluns, -7)) +
+              '" aria-label="Setmana anterior">' + ic('esquerra') + '</button>' +
+            '<span>' + esc(esAquesta ? 'Aquesta setmana' : 'Setmana del ' + curta(s.dilluns)) + '</span>' +
+            '<button class="btn btn-icona" data-set="' + esc(suma(s.dilluns, 7)) +
               '" aria-label="Setmana següent"' + (esAquesta ? ' disabled' : '') + '>' +
-              ic('dreta', 'ic-p') + '</button>' +
-          '</div>' +
+              ic('dreta') + '</button>' +
+          '</nav>' +
 
           /* LA CÀRREGA, QUE ÉS EL QUE HA VINGUT A SABER. */
-          '<section class="fitxa viu ent-carrega" data-dura="' + (s.dura ? '1' : '0') + '">' +
-            '<p class="marge">Càrrega de la setmana</p>' +
-            '<b class="ent-gran">' + coma(s.kmEsforc, 1) + '<i>km-esforç</i></b>' +
-            '<p class="menut ent-formula">km + desnivell ÷ 100. Sis quilòmetres amb mil de ' +
+          '<section class="carrega-gran" data-dura="' + (s.dura ? '1' : '0') + '" aria-label="La càrrega de la setmana">' +
+            '<p class="gravat">La càrrega' + (s.dura ? ' · setmana dura' : '') + '</p>' +
+            '<p class="n">' + coma(s.kmEsforc, 1) + '<small>km-esforç</small></p>' +
+            '<p class="menut formula">km + desnivell ÷ 100. Sis quilòmetres amb mil de ' +
               'desnivell són 16; dos de plans, 2.</p>' +
-            '<div class="ent-xifres">' +
-              cel('Sessions', s.sessions, '', (s.trail ? s.trail + ' trail' : '') +
-                  (s.trail && s.forca ? ' · ' : '') + (s.forca ? s.forca + ' força' : '')) +
-              cel('Quilòmetres', coma(s.km, 1), 'km', '') +
-              cel('Desnivell', mil(s.desnivell), 'm', s.llargues
-                  ? s.llargues + (s.llargues === 1 ? ' de llarga' : ' de llargues') : '') +
-              cel('Temps', hores(s.minuts) || '—', '', '') +
-            '</div>' +
           '</section>' +
+          '<div class="dades">' +
+            cel('Sessions', s.sessions, '', (s.trail ? s.trail + ' trail' : '') +
+                (s.trail && s.forca ? ' · ' : '') + (s.forca ? s.forca + ' força' : '')) +
+            cel('Quilòmetres', coma(s.km, 1), 'km', '') +
+            cel('Desnivell', mil(s.desnivell), 'm', s.llargues
+                ? s.llargues + (s.llargues === 1 ? ' de llarga' : ' de llargues') : '') +
+            cel('Temps', hores(s.minuts) || '—', '', '') +
+          '</div>' +
 
           passosFitxa(s) +
           corba() +
           llista(s) +
 
-          '<button class="btn btn-secundari" data-nou="1" style="width:100%;margin-top:var(--e3)">' +
+          '<button class="btn btn-ple" data-nou="1" aria-haspopup="dialog" style="margin-top:var(--e5)">' +
             ic('mes') + 'Afegeix-ne un a mà</button>' +
         '</div>';
 
@@ -110,87 +111,114 @@ App.registraVista('entrenaments', {
     }
 
     function cel(nom, valor, unitat, sota) {
-      return '<div><span class="marge">' + esc(nom) + '</span>' +
-        '<b>' + esc(String(valor)) + (unitat ? '<i>' + esc(unitat) + '</i>' : '') + '</b>' +
-        '<span class="seg-delta">' + esc(sota || '') + '</span></div>';
+      return '<div class="dada"><p class="gravat">' + esc(nom) + '</p>' +
+        '<p class="v">' + esc(String(valor)) + (unitat ? '<small>' + esc(unitat) + '</small>' : '') + '</p>' +
+        (sota ? '<p class="s">' + esc(sota) + '</p>' : '') + '</div>';
     }
 
     // -------------------------------------------------------------- passos
-    /* A LA SEVA FITXA I NO BARREJATS AMB LA CÀRREGA. Els passos no són
+    /* A LA SEVA FILA I NO BARREJATS AMB LA CÀRREGA. Els passos no són
        entrenament: són el que es mou la resta del dia, i justament per això
        valen —dues setmanes amb la mateixa càrrega i vint mil passos de
        diferència no són la mateixa setmana—. */
     function passosFitxa(s) {
       if (!s.passos) {
-        return '<button class="ent-passos ent-passos-buit" data-passos="1">' +
-          '<span><b>Passos</b><span class="menut">Encara no n\'hi ha d\'aquesta setmana</span></span>' +
-          '<span class="menut">Afegeix-los</span></button>';
+        return '<button class="passos passos-buit" data-passos="1" aria-haspopup="dialog">' +
+          '<span><span class="gravat">Passos</span>&nbsp; encara no n\'hi ha d\'aquesta setmana</span>' +
+          '<span class="accio">Afegeix-los</span></button>';
       }
-      return '<button class="ent-passos" data-passos="1">' +
-        '<span><b>Passos</b><span class="menut">' +
-          esc(mil(s.passos.total) + ' en set dies') + '</span></span>' +
-        '<span class="franja-cota"><span class="n">' + esc(mil(s.passos.mitjana)) +
-          '</span><span class="u">al dia</span></span>' +
+      return '<button class="passos" data-passos="1" aria-haspopup="dialog">' +
+        '<span><span class="gravat">Passos</span>&nbsp; <b>' + esc(mil(s.passos.total)) + '</b> en set dies</span>' +
+        '<span><b>' + esc(mil(s.passos.mitjana)) + '</b> al dia</span>' +
       '</button>';
     }
 
     // --------------------------------------------------------------- corba
-    /* DOTZE SETMANES EN BARRES I NO EN LÍNIA. Una setmana és una capsa
+    /* DOTZE SETMANES EN FILETS I NO EN LÍNIA. Una setmana és una capsa
        tancada, no un punt d'una corba contínua: no hi ha res entremig del
-       dilluns i el següent. Les barres ho diuen; una línia s'ho inventaria. */
+       dilluns i el següent. Els filets ho diuen; una línia s'ho inventaria.
+       Els vells, clars; el d'ara, fosc i més gruixut. Cada filet es pot tocar
+       i porta a aquella setmana. */
     function corba() {
       var c = d.corba || [];
       var max = 0;
       c.forEach(function (x) { if (x.kmEsforc > max) max = x.kmEsforc; });
       if (!max) return '';
-      return '<section class="fitxa ent-corba">' +
-        '<p class="marge">Dotze setmanes</p>' +
-        '<div class="ent-barres">' + c.map(function (x) {
-          var alt = Math.max(2, Math.round((x.kmEsforc / max) * 100));
-          return '<button class="ent-barra" data-set="' + esc(x.dilluns) + '"' +
-            (x.dilluns === d.dilluns ? ' aria-current="true"' : '') +
-            ' aria-label="' + esc('Setmana del ' + curta(x.dilluns) + ': ' +
-              coma(x.kmEsforc, 1) + ' km-esforç') + '">' +
-            '<span style="height:' + alt + '%"></span></button>';
-        }).join('') + '</div>' +
-        '<div class="seg-eix"><span>' + esc(curta(c[0].dilluns)) + '</span>' +
-          '<span>' + esc(coma(max, 0) + ' km-e màx') + '</span></div>' +
+      var W = 343, B = 108, H = 132, n = c.length;
+      var rampa = [[188, 206, 212], [122, 181, 193], [28, 132, 150]];
+      function mescla(t) {
+        var q = t * (rampa.length - 1), a = Math.min(Math.floor(q), rampa.length - 2), f = q - a;
+        return 'rgb(' + rampa[a].map(function (v, k) { return Math.round(v + (rampa[a + 1][k] - v) * f); }).join(',') + ')';
+      }
+      var X = function (i) { return 10 + i * (W - 20) / (n - 1); };
+      var pas = (W - 20) / (n - 1);             // tota la columna es pot tocar
+      /* La xifra del màxim, una vegada: a la setmana més recent que l'assoleix. */
+      var ultimMax = -1;
+      c.forEach(function (x, i) { if (x.kmEsforc === max) ultimMax = i; });
+      var cos = '<path d="M0 ' + B + 'H' + W + '" stroke="var(--fil)" stroke-width="1"/>';
+      c.forEach(function (x, i) {
+        var ara = x.dilluns === d.dilluns;
+        var h = x.kmEsforc / max * 84;
+        var col = ara ? '#054a57' : mescla(n > 2 ? i / (n - 2) : 0);
+        cos += '<g class="dotze-barra" role="button" tabindex="0" data-set="' + esc(x.dilluns) + '"' +
+          (ara ? ' aria-current="true"' : '') + ' aria-label="' +
+          esc('Setmana del ' + curta(x.dilluns) + ': ' + coma(x.kmEsforc, 1) + ' km-esforç') + '">' +
+          '<rect class="toc" x="' + (X(i) - pas / 2) + '" y="0" width="' + pas + '" height="' + H + '"/>';
+        if (!x.kmEsforc) {
+          cos += '<circle cx="' + X(i) + '" cy="' + (B - 3) + '" r="2.5" fill="none" stroke="var(--t2)"/>';
+        } else {
+          cos += '<path d="M' + X(i) + ' ' + B + 'V' + (B - h) + '" stroke="' + col + '" stroke-width="' + (ara ? 3 : 1.5) + '"/>' +
+            '<path d="M' + (X(i) - 5) + ' ' + (B - h) + 'H' + (X(i) + 5) + '" stroke="' + col + '" stroke-width="' + (ara ? 2 : 1) + '"/>';
+          if (ara || (x.kmEsforc === max && i === ultimMax)) {
+            /* La d'ara, a la dreta de tot: s'alinea a la dreta i puja per sobre
+               de la veïna, que si no la xifra semblava seva. */
+            var dalt = B - h;
+            if (i === n - 1 && i > 0) dalt = Math.min(dalt, B - c[i - 1].kmEsforc / max * 84);
+            cos += '<text x="' + X(i) + '" y="' + (dalt - 8) + '" text-anchor="' + (i === n - 1 ? 'end' : i === 0 ? 'start' : 'middle') + '"' +
+              (ara ? ' class="ara"' : '') + '>' + coma(x.kmEsforc, x.kmEsforc % 1 ? 1 : 0) + '</text>';
+          }
+        }
+        cos += '</g>';
+      });
+      cos += '<text x="0" y="' + (H - 2) + '">' + esc(curta(c[0].dilluns).toUpperCase()) + '</text>' +
+        '<text x="' + W + '" y="' + (H - 2) + '" text-anchor="end" class="ara">' + esc(curta(c[n - 1].dilluns).toUpperCase()) + '</text>';
+      return '<section class="seccio" aria-label="Dotze setmanes">' +
+        '<div class="seccio-cap"><h2>Dotze setmanes</h2><span class="gravat">' + esc(coma(max, 0)) + ' km-e màx</span></div>' +
+        '<svg class="dotze" viewBox="0 0 ' + W + ' ' + H + '">' + cos + '</svg>' +
       '</section>';
     }
 
     // -------------------------------------------------------------- llista
     function llista(s) {
       if (!s.llista.length) {
-        return '<div class="estat" style="margin-top:var(--e4)">' + ic('entrenaments', 'ic-g') +
+        return '<div class="estat">' + ic('entrenaments', 'ic-g') +
           '<h2>Cap entrenament aquesta setmana</h2>' +
           '<p>Passa la captura de la llista de la setmana i s\'ompliran tots de cop, ' +
           'amb els quilòmetres i el desnivell de cadascun.</p>' +
-          '<button class="btn btn-primari" data-captura="1">' + ic('captura') + 'Passa la captura</button>' +
+          '<button class="btn btn-primari" data-captura="1" aria-haspopup="dialog">' + ic('captura') + 'Passa la captura</button>' +
         '</div>';
       }
       var ordre = s.llista.slice().sort(function (a, b) { return a.data < b.data ? 1 : -1; });
-      return '<section>' +
-        '<p class="marge" style="margin:var(--e4) 0 var(--e2)">Les sessions</p>' +
-        '<div class="seg-controls">' + ordre.map(function (x) {
-          return '<div class="franja-fila"><button class="franja seg-fila ent-fila" data-obre="' +
-            esc(x.id) + '"' + (x.llarga ? ' data-llarga="1"' : '') + '>' +
-            '<span><span class="franja-nom">' +
-              esc(x.titol || (x.mena === 'forca' ? 'Força' : 'Sortida')) + '</span>' +
-            '<span class="franja-sota">' + esc(curta(x.data) + ' · ' +
-              [x.km ? coma(x.km, 1) + ' km' : '',
+      return '<section class="seccio" aria-label="Les sessions">' +
+        '<div class="seccio-cap"><h2>Sessions</h2><span class="gravat">' + ordre.length +
+          (ordre.length === 1 ? ' sessió' : ' sessions') + '</span></div>' +
+        '<ul class="sessions">' + ordre.map(function (x) {
+          var menaNom = x.mena === 'forca' ? 'força' : x.mena === 'trail' ? 'trail' : 'altre';
+          return '<li><button class="sessio" data-obre="' + esc(x.id) + '"' + (x.llarga ? ' data-llarga="1"' : '') + ' aria-haspopup="dialog">' +
+            '<span class="gravat">' + esc(curta(x.data) + ' · ' + menaNom + (x.llarga ? ' · llarga' : '')) + '</span>' +
+            '<span class="t">' + esc(x.titol || (x.mena === 'forca' ? 'Força' : 'Sortida')) + '</span>' +
+            '<span class="m">' + esc([x.km ? coma(x.km, 1) + ' km' : '',
                x.desnivell ? mil(x.desnivell) + ' m D+' : '',
-               x.minuts ? hores(x.minuts) : ''].filter(Boolean).join(' · ')) + '</span></span>' +
+               x.minuts ? hores(x.minuts) : ''].filter(Boolean).join(' · ') || 'sense xifres') + '</span>' +
             /* UNA SESSIÓ DE FORÇA NO TÉ QUILÒMETRES D'ESFORÇ i posar-hi un
                guionet és ocupar la columna amb un no-res. Els minuts sí que
                en diuen alguna cosa, i és el que la fa comparable amb les
                altres sessions de força. */
-            '<span class="franja-cota">' + (x.kmEsforc === null
-              ? '<span class="n">' + (x.minuts ? Math.round(x.minuts) : '—') + '</span>' +
-                '<span class="u">min</span>'
-              : '<span class="n">' + coma(x.kmEsforc, 1) + '</span>' +
-                '<span class="u">km-e</span>') + '</span>' +
-          '</button></div>';
-        }).join('') + '</div>' +
+            '<span class="ke">' + (x.kmEsforc === null
+              ? (x.minuts ? Math.round(x.minuts) : '—') + '<small>min</small>'
+              : coma(x.kmEsforc, 1) + '<small>km-e</small>') + '</span>' +
+          '</button></li>';
+        }).join('') + '</ul>' +
       '</section>';
     }
 
@@ -211,13 +239,13 @@ App.registraVista('entrenaments', {
           '<p class="menut">Es llegeix la imatge i et dic què hi he vist. No es desa res ' +
             'fins que ho confirmis: una lectura d\'una pantalla s\'equivoca, i una xifra ' +
             'inventada dins de la sèrie és pitjor que un forat.</p>' +
-          '<label class="btn btn-secundari" style="width:100%">' + ic('entrenaments') +
+          '<label class="btn btn-ple">' + ic('entrenaments') +
             'Llista d\'entrenaments (Strava)' +
             '<input type="file" accept="image/*" hidden data-cap="trail"></label>' +
-          '<label class="btn btn-secundari" style="width:100%">' + ic('h-forca') +
+          '<label class="btn btn-ple">' + ic('h-forca') +
             'App de força' +
             '<input type="file" accept="image/*" hidden data-cap="forca"></label>' +
-          '<label class="btn btn-secundari" style="width:100%">' + ic('h-petjada') +
+          '<label class="btn btn-ple">' + ic('h-petjada') +
             'Informe de passos del rellotge' +
             '<input type="file" accept="image/*" hidden data-cap="passos"></label>' +
         '</div>');
@@ -250,13 +278,12 @@ App.registraVista('entrenaments', {
       var l = r.sessions;
       var cos = App.modal('He llegit ' + l.length + (l.length === 1 ? ' sessió' : ' sessions'),
         '<form class="formulari" id="f-prop">' +
-          (r.avis ? '<p class="seg-avis" data-n="avis">' + ic('avis') +
-                    '<span>' + esc(r.avis) + '</span></p>' : '') +
+          (r.avis ? '<div class="avis">' + ic('avis') + '<div>' + esc(r.avis) + '</div></div>' : '') +
           '<p class="menut">Repassa-ho i treu el que no vagi bé. El que deixis marcat és el ' +
             'que es desarà.</p>' +
           l.map(function (s, i) {
-            return '<div class="ent-prop' + (s.dubtosa ? ' ent-prop-dubte' : '') + '">' +
-              '<label class="ent-prop-cap">' +
+            return '<div class="prop' + (s.dubtosa ? ' prop-dubte' : '') + '">' +
+              '<label class="prop-cap">' +
                 '<input type="checkbox" data-tria="' + i + '"' + (s.data ? ' checked' : '') + '>' +
                 '<span><b>' + esc(s.titol || (s.mena === 'forca' ? 'Força' : 'Sortida')) + '</b>' +
                 '<span class="menut">' + esc([
@@ -273,12 +300,12 @@ App.registraVista('entrenaments', {
                  fa el codi, que sap quines files compten. */
               '<input class="entrada" type="date" data-dia="' + i + '" value="' +
                 esc(s.data || '') + '">' +
-              (s.dubtosa ? '<p class="menut">' + esc(s.data
+              (s.dubtosa ? '<p class="menut dubte">' + esc(s.data
                   ? 'Aquest dia cau fora de la setmana que estàs important. Comprova\'l.'
                   : 'No he sabut veure quin dia era. Posa-l\'hi tu.') + '</p>' : '') +
             '</div>';
           }).join('') +
-          '<button class="btn btn-primari" type="submit" style="width:100%">Desa el que he marcat</button>' +
+          '<div class="desa-fix"><button class="btn btn-primari btn-ple" type="submit">Desa el que he marcat</button></div>' +
         '</form>');
 
       cos.querySelector('#f-prop').addEventListener('submit', function (ev) {
@@ -302,13 +329,13 @@ App.registraVista('entrenaments', {
         if (!tria.length) { App.brindis('No has deixat cap sessió marcada', 'error'); return; }
 
         var bt = cos.querySelector('button[type="submit"]');
-        bt.disabled = true; bt.textContent = 'Desant…';
+        bt.disabled = true; bt.dataset.carregant = '1';
         crida('entrenaments', 'confirmaCaptura', { sessions: tria }).then(function (x) {
           App.tancaModal();
           App.brindis(x.desats + (x.desats === 1 ? ' sessió desada' : ' sessions desades'));
           carrega(true);
         }).catch(function (err) {
-          bt.disabled = false; bt.textContent = 'Desa el que he marcat';
+          bt.disabled = false; bt.dataset.carregant = '0';
           App.brindis(err.message, 'error');
         });
       });
@@ -321,22 +348,22 @@ App.registraVista('entrenaments', {
     function obrePassos(total, mitjana, avis) {
       var cos = App.modal('Passos de la setmana',
         '<form class="formulari" id="f-pas">' +
-          (avis ? '<p class="seg-avis" data-n="avis">' + ic('avis') +
-                  '<span>' + esc(avis) + '</span></p>' : '') +
-          '<div class="camp"><label for="p-total">Total de la setmana</label>' +
+          (avis ? '<div class="avis">' + ic('avis') + '<div>' + esc(avis) + '</div></div>' : '') +
+          '<div class="camp-fila dos"><div class="camp"><label for="p-total">Total</label>' +
             '<input class="entrada" id="p-total" type="number" min="0" inputmode="numeric" ' +
               'value="' + (total === null || total === undefined ? '' : total) + '"></div>' +
-          '<div class="camp"><label for="p-mitjana">Mitjana al dia</label>' +
+          '<div class="camp"><label for="p-mitjana">Al dia</label>' +
             '<input class="entrada" id="p-mitjana" type="number" min="0" inputmode="numeric" ' +
               'value="' + (mitjana === null || mitjana === undefined ? '' : mitjana) + '">' +
-            '<p class="menut">Amb una de les dues n\'hi ha prou: l\'altra surt sola.</p></div>' +
-          '<button class="btn btn-primari" type="submit" style="width:100%">Desa els passos</button>' +
+            '</div></div>' +
+          '<p class="menut">El total de la setmana o la mitjana al dia: amb una de les dues n\'hi ha prou, l\'altra surt sola.</p>' +
+          '<button class="btn btn-primari btn-ple" type="submit">Desa els passos</button>' +
         '</form>');
 
       cos.querySelector('#f-pas').addEventListener('submit', function (ev) {
         ev.preventDefault();
         var bt = cos.querySelector('button[type="submit"]');
-        bt.disabled = true; bt.textContent = 'Desant…';
+        bt.disabled = true; bt.dataset.carregant = '1';
         var buit = function (id) {
           var v = cos.querySelector(id).value.trim();
           return v === '' ? null : Number(v);
@@ -349,7 +376,7 @@ App.registraVista('entrenaments', {
           App.brindis('Passos desats');
           carrega(true);
         }).catch(function (err) {
-          bt.disabled = false; bt.textContent = 'Desa els passos';
+          bt.disabled = false; bt.dataset.carregant = '0';
           App.brindis(err.message, 'error');
         });
       });
@@ -358,18 +385,18 @@ App.registraVista('entrenaments', {
     // ------------------------------------------------------- una sessió a mà
     function obreSessio(s) {
       var v = s || { data: d.avui, mena: 'trail', titol: '', km: null,
-                     desnivell: null, minuts: null, pulsacions: null };
+                     desnivell: null, minuts: null, kcal: null, pulsacions: null, notes: '' };
       var val = function (x) { return x === null || x === undefined ? '' : x; };
 
       var cos = App.modal(s ? 'Entrenament del ' + curta(v.data) : 'Entrenament nou',
-        '<form id="f-ent" class="formulari">' +
+        '<form id="f-ent" class="formulari" novalidate>' +
           '<div class="camp"><label for="e-data">Dia</label>' +
             '<input class="entrada" id="e-data" type="date" value="' + esc(v.data) + '" required></div>' +
 
-          '<div class="camp"><label>Mena</label><div class="tria-fila">' +
+          '<div class="camp" role="group" aria-labelledby="e-mena"><span id="e-mena">Mena</span><div class="tria-fila">' +
             [['trail', 'Trail'], ['forca', 'Força'], ['altre', 'Altre']].map(function (m) {
               return '<button type="button" class="tria-bt" data-mena="' + m[0] + '"' +
-                (v.mena === m[0] ? ' aria-pressed="true"' : '') + '>' + m[1] + '</button>';
+                ' aria-pressed="' + (v.mena === m[0] ? 'true' : 'false') + '">' + m[1] + '</button>';
             }).join('') + '</div></div>' +
 
           '<div class="camp"><label for="e-titol">Com se\'n diu</label>' +
@@ -387,12 +414,29 @@ App.registraVista('entrenaments', {
               '<input class="entrada" id="e-min" type="number" min="0" max="1440" ' +
                 'inputmode="numeric" value="' + esc(String(val(v.minuts))) + '"></div>' +
           '</div>' +
-          '<p class="menut" style="margin:calc(-1 * var(--e2)) 0 0">El desnivell és el ' +
+          '<p class="menut" style="margin-top:calc(-1 * var(--e2))">El desnivell és el ' +
             'positiu, el que has pujat. És el que fa que una sortida compti el que compta.</p>' +
 
-          '<button class="btn btn-primari" type="submit" style="width:100%">' +
-            (s ? 'Desa els canvis' : 'Desa l\'entrenament') + '</button>' +
-          (s ? '<button class="btn btn-perill" type="button" data-fora="1" style="width:100%">' +
+          /* EL QUE DIU EL RELLOTGE, PER SI EL VOLS GUARDAR. No compta per a
+             la càrrega, però ja hi era al full i el formulari no el deixava
+             escriure: en corregir una sessió a mà, a més, se l'esborrava. */
+          '<div class="camp-fila dos">' +
+            '<div class="camp"><label for="e-kcal">Kcal</label>' +
+              '<input class="entrada" id="e-kcal" type="number" min="0" max="20000" ' +
+                'inputmode="numeric" value="' + esc(String(val(v.kcal))) + '"></div>' +
+            '<div class="camp"><label for="e-pul">Pulsacions</label>' +
+              '<input class="entrada" id="e-pul" type="number" min="30" max="230" ' +
+                'inputmode="numeric" value="' + esc(String(val(v.pulsacions))) + '"></div>' +
+          '</div>' +
+          '<p class="menut" style="margin-top:calc(-1 * var(--e2))">Les pulsacions, la mitjana de la sessió.</p>' +
+
+          '<div class="camp"><label for="e-notes">Notes</label>' +
+            '<textarea class="entrada" id="e-notes" rows="2">' + esc(v.notes || '') + '</textarea></div>' +
+
+          '<div class="desa-fix"><p class="camp-mal" id="e-mal" role="alert" hidden></p>' +
+          '<button class="btn btn-primari btn-ple" type="submit">' +
+            (s ? 'Desa els canvis' : 'Desa l\'entrenament') + '</button></div>' +
+          (s ? '<button class="btn btn-perill btn-ple" type="button" data-fora="1">' +
                'Treu-lo</button>' : '') +
         '</form>');
 
@@ -423,10 +467,23 @@ App.registraVista('entrenaments', {
           });
       });
 
+      var mal = cos.querySelector('#e-mal');
       cos.querySelector('#f-ent').addEventListener('submit', function (ev) {
         ev.preventDefault();
+        mal.hidden = true;
         var bt = cos.querySelector('button[type="submit"]');
-        bt.disabled = true; bt.textContent = 'Desant…';
+        if (!cos.querySelector('#e-data').value) {
+          mal.textContent = 'Falta el dia de l\'entrenament.'; mal.hidden = false;
+          cos.querySelector('#e-data').focus();
+          return;
+        }
+        var km = cos.querySelector('#e-km').value.trim();
+        if (km !== '' && !/^[0-9]+([.,][0-9]+)?$/.test(km)) {
+          mal.textContent = 'Els quilòmetres han de ser un número, com 14,6.'; mal.hidden = false;
+          cos.querySelector('#e-km').focus();
+          return;
+        }
+        bt.disabled = true; bt.dataset.carregant = '1';
         var buit = function (id) {
           var x = cos.querySelector(id).value.trim();
           return x === '' ? null : Number(x.replace(',', '.'));
@@ -437,13 +494,14 @@ App.registraVista('entrenaments', {
           mena: mena,
           titol: cos.querySelector('#e-titol').value.trim(),
           km: buit('#e-km'), desnivell: buit('#e-des'), minuts: buit('#e-min'),
+          kcal: buit('#e-kcal'), pulsacions: buit('#e-pul'),
+          notes: cos.querySelector('#e-notes').value.trim(),
           font: s ? s.font : 'ma'
         }).then(function () {
           App.tancaModal(); App.brindis('Entrenament desat'); carrega(true);
         }).catch(function (err) {
-          bt.disabled = false;
-          bt.textContent = s ? 'Desa els canvis' : 'Desa l\'entrenament';
-          App.brindis(err.message, 'error');
+          bt.disabled = false; bt.dataset.carregant = '0';
+          mal.textContent = err.message; mal.hidden = false;
         });
       });
     }
@@ -479,10 +537,16 @@ App.registraVista('entrenaments', {
       if (t) t.addEventListener('click', function () { App.ves('inici'); });
 
       arrel.querySelectorAll('[data-set]').forEach(function (b) {
-        b.addEventListener('click', function () {
+        var ves = function () {
           if (b.disabled) return;
           dilluns = b.dataset.set;
           carrega(true);
+        };
+        b.addEventListener('click', ves);
+        /* Els filets de les dotze setmanes són dibuix, no botons de debò:
+           el teclat hi ha d'arribar igual. */
+        if (b.tagName.toLowerCase() === 'g') b.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ves(); }
         });
       });
 

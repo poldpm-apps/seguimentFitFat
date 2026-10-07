@@ -19,7 +19,7 @@ eines/         comprovar, provar, construir, desplegar i el mirall
 index.html     la pantalla publicada. LA GENERA `npm run construeix`: no l'editis
 ```
 
-El nucli (`00_` a `65_`) i el frontal (`ui_*.html`) són els de JEFE, copiats.
+El nucli (`00_` a `65_`) és el de JEFE, copiat. El frontal té un disseny propi, «el pols de les setmanes»: vegeu `DESIGN.md`.
 Els fitxers propis són `40_Mod_Seguiment.gs`, `vista_seguiment.html`,
 `40_Mod_Entrenaments.gs` i `vista_entrenaments.html`.
 

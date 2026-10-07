@@ -393,7 +393,7 @@ var Jefe = (function () {
     },
 
     buit: function (titol, text, botoHtml) {
-      return '<div class="estat">' + ic('habits', 'ic-g') +
+      return '<div class="estat">' + ic('cos', 'ic-g') +
              '<h2>' + esc(titol) + '</h2>' +
              '<p>' + esc(text) + '</p>' + (botoHtml || '') + '</div>';
     },
@@ -433,7 +433,7 @@ var Jefe = (function () {
                 de l'error i CAP botó. Comprovat amb Hàbits. El comentari de
                 més amunt ja explica que això va ser un cul-de-sac una vegada;
                 ho era encara per al cas general. */
-             '<button class="btn btn-fantasma" data-va-inici="1">Ves al full índex</button>' +
+             '<button class="btn btn-fantasma" data-va-inici="1">Torna a l\'inici</button>' +
              '</div>';
     },
 
@@ -458,14 +458,9 @@ var Jefe = (function () {
     arrenca: function (estatInicial) {
       App.moduls = (estatInicial && estatInicial.moduls) || Cau.get('moduls', []);
       App.pintaNav();
-      /* Fosc sempre, no «segons el que digui el sistema». Amb «auto», el
-         mateix JEFE sortia blanc al mòbil i fosc al PC segons com tingués
-         cadascun la configuració, i això no és una app: són dues. La sala de
-         comandament ja és fosca; la resta l'ha d'acompanyar.
-
-         I ara ja no es tria: el botó de passar a full de dia s'ha tret. El que
-         hi hagi desat als aparells d'abans —«auto», «clar»— es migra aquí i
-         no torna a preguntar-se. */
+      /* UN SOL FULL, EL CLAR. Amb «segons el sistema», la mateixa app sortia
+         d'un color al mòbil i d'un altre a l'ordinador, i això no és una app:
+         són dues. El cos és el camp pàl·lid de la seva icona. */
       App.aplicaTema();
 
       /* LA MARCA DE VERSIÓ. La construcció hi deixa la data i, si el codi
@@ -775,7 +770,10 @@ var Jefe = (function () {
       fosc.querySelector('[data-tanca]').addEventListener('click', App.tancaModal);
       fosc.addEventListener('click', function (ev) { if (ev.target === fosc) App.tancaModal(); });
 
-      var primer = fosc.querySelector('input, select, textarea, button:not([data-tanca])');
+      /* EL CAMP QUE TOCA, SI LA PANTALLA EL DIU. El dia del control ja ve
+         posat: el primer que escrius el diumenge és el pes. */
+      var primer = fosc.querySelector('[data-primer]') ||
+                   fosc.querySelector('input, select, textarea, button:not([data-tanca])');
       if (primer && primer.type !== 'button') setTimeout(function () { primer.focus(); }, 320);
       return fosc.querySelector('.modal');
     },
@@ -968,21 +966,16 @@ var Jefe = (function () {
     },
 
     /**
-     * FOSC I PROU.
-     *
-     * Hi havia un botó per passar a full de dia i en Pol l'ha tret: el vol
-     * fosc sempre. La funció es queda perquè és qui posa l'atribut en
-     * arrencar, però ja no pregunta res a ningú.
-     *
-     * El full clar segueix definit a l'estil i no s'esborra: és el que fa que
-     * el fosc estigui escrit com una tria i no com l'única cosa que hi ha.
+     * CLAR I PROU. La funció es queda perquè és qui posa l'atribut en
+     * arrencar; ja no pregunta res a ningú. El que hi hagués desat d'abans
+     * —«fosc», d'un aparell que venia de JEFE— es migra aquí.
      */
     aplicaTema: function () {
-      Cau.set('tema', 'fosc');
-      document.documentElement.setAttribute('data-tema', 'fosc');
+      Cau.set('tema', 'clar');
+      document.documentElement.setAttribute('data-tema', 'clar');
     },
 
-    temaActual: function () { return 'fosc'; }
+    temaActual: function () { return 'clar'; }
   };
 
   /* LES DUES SORTIDES D'UNA PANTALLA D'ERROR, ESCOLTADES UN SOL COP.

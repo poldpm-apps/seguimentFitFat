@@ -50,11 +50,55 @@ const MOCK = `
   var AVUI = ${j(AVUI)};
   var INICI       = ${j(D.nucliInici())};
   var SEGUIMENT   = ${j(D.segPantalla())};
-  /* Cinc setmanes cuinades. La del 20 de juliol son quatre sortides planes i
-     la del 27 tres amb desnivell: es el cas que en Pol demanava veure. */
+  /* Setze setmanes cuinades, de fa quinze a aquesta: les mateixes que fan
+     servir els controls del seguiment, perquè les carenes es dibuixin amb
+     els entrenaments d'aquells dies. */
   var ENTRENA     = ${j(Object.fromEntries(
-    ['2026-07-06', '2026-07-13', '2026-07-20', '2026-07-27', '2026-08-03']
+    Array.from({ length: 16 }, (_, k) => D.suma(D.dlAra, -7 * k))
       .map((dl) => [dl, D.entPantalla(dl)])))};
+  /* Els desats es veuen. Al mirall no hi ha full, però un control desat que
+     no surt a l'històric no deixa provar res del que passa després. */
+  function desaControlMirall(p) {
+    var h = SEGUIMENT.historic;
+    var fila = { id: 'seg_mirall_' + p.data, data: p.data, pes: p.pes, cintura: p.cintura,
+      cinturaValida: p.cinturaValida !== false, forca: p.forca, trail: p.trail, trailGros: p.trailGros,
+      energia: p.energia, son: p.son, gana: p.gana, dieta: p.dieta, notes: p.notes,
+      fotos: { frontal: '', perfil: '', esquena: '' } };
+    var hi = h.filter(function (c) { return c.data === p.data; })[0];
+    if (hi) { fila.fotos = hi.fotos; h[h.indexOf(hi)] = fila; } else h.push(fila);
+    h.sort(function (a, b) { return a.data < b.data ? -1 : 1; });
+    var dl = (function (iso) { var x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+      return [x.getFullYear(), ('0' + (x.getMonth() + 1)).slice(-2), ('0' + x.getDate()).slice(-2)].join('-'); });
+    if (dl(p.data) === dl(AVUI)) { SEGUIMENT.estat.pendent = false; SEGUIMENT.estat.fetAquestaSetmana = true; }
+    return { desat: true, data: p.data, id: fila.id };
+  }
+  function desaSessioMirall(p) {
+    var dl = (function (iso) { var x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+      return [x.getFullYear(), ('0' + (x.getMonth() + 1)).slice(-2), ('0' + x.getDate()).slice(-2)].join('-'); })(p.data);
+    var ke = (p.km || p.desnivell) ? Math.round(((p.km || 0) + (p.desnivell || 0) / 100) * 10) / 10 : null;
+    Object.keys(ENTRENA).forEach(function (k) {
+      var e = ENTRENA[k];
+      if (e.dilluns === dl) {
+        var st = e.setmana, ses = { id: p.id || ('ent_m' + Date.now()), data: p.data, mena: p.mena, titol: p.titol,
+          km: p.km, desnivell: p.desnivell, minuts: p.minuts, kcal: p.kcal, pulsacions: p.pulsacions,
+          notes: p.notes, font: p.font || 'ma', kmEsforc: ke, llarga: ke !== null && ke >= 12 };
+        st.llista = st.llista.filter(function (x) { return x.id !== ses.id; }).concat([ses]);
+        st.sessions = st.llista.length;
+        st.kmEsforc = Math.round(st.llista.reduce(function (t, x) { return t + (x.kmEsforc || 0); }, 0) * 10) / 10;
+        st.km = Math.round(st.llista.reduce(function (t, x) { return t + (x.km || 0); }, 0) * 10) / 10;
+        st.desnivell = st.llista.reduce(function (t, x) { return t + (x.desnivell || 0); }, 0);
+        st.minuts = st.llista.reduce(function (t, x) { return t + (x.minuts || 0); }, 0);
+        st.trail = st.llista.filter(function (x) { return x.mena === 'trail'; }).length;
+        st.forca = st.llista.filter(function (x) { return x.mena === 'forca'; }).length;
+      }
+      e.corba.forEach(function (c) {
+        if (c.dilluns !== dl) return;
+        var w = ENTRENA[dl] && ENTRENA[dl].setmana;
+        if (w) { c.kmEsforc = w.kmEsforc; c.sessions = w.sessions; c.desnivell = w.desnivell; }
+      });
+    });
+    return { desat: true, id: 'ent_mirall', data: p.data };
+  }
   var copia = function (o) { return JSON.parse(JSON.stringify(o)); };
 
   /* Bessona d'Utils.aixafa. Amb normalize('NFD') la a amb accent es parteix en
@@ -102,7 +146,7 @@ const MOCK = `
 
     if (modul === 'seguiment') {
       if (accio === 'pantalla') return copia(SEGUIMENT);
-      if (accio === 'desa') { return { desat: true, data: p.data, id: 'seg_mirall' }; }
+      if (accio === 'desa') return desaControlMirall(p);
       if (accio === 'pujaFoto') return { id: 'mirall', angle: p.angle, data: p.data };
       if (accio === 'esborraFoto') { window.__ultimEsborrat = p; return { tret: true, paperera: true }; }
       if (accio === 'comenta') return { comentari: 'Comentari inventat del mirall: aqui no hi ha cap IA.', data: p.data };
@@ -125,7 +169,7 @@ const MOCK = `
         for (var ci = 0; ci < claus.length; ci++) if (claus[ci] <= vol) tria = claus[ci];
         return copia(ENTRENA[tria]);
       }
-      if (accio === 'desa') return { desat: true, id: 'ent_mirall', data: p.data };
+      if (accio === 'desa') return desaSessioMirall(p);
       if (accio === 'esborra') return { tret: true };
       if (accio === 'desaPassos') return { desat: true, dilluns: p.dilluns,
         total: p.total || (p.mitjana || 0) * 7, mitjana: p.mitjana || Math.round((p.total || 0) / 7) };
@@ -134,16 +178,18 @@ const MOCK = `
          provar que es pugui repassar, corregir la data i desar nomes el que
          s hagi marcat. */
       if (accio === 'llegeixCaptura') {
+        var diaDe = function (dl, n) { var x = new Date(dl + 'T12:00:00'); x.setDate(x.getDate() + n);
+          return [x.getFullYear(), ('0' + (x.getMonth() + 1)).slice(-2), ('0' + x.getDate()).slice(-2)].join('-'); };
         window.__ultimaCaptura = { mena: p.mena, mida: String(p.contingut || '').length };
         if (p.mena === 'passos') {
           return { mena: 'passos', dilluns: p.dilluns,
                    passos: { total: 81250, mitjana: null }, avis: '' };
         }
         return { mena: p.mena, dilluns: p.dilluns, avis: '', sessions: [
-          { data: '2026-07-28', mena: 'trail', titol: 'Sèries a la pujada', km: 7.8,
+          { data: diaDe(p.dilluns, 1), mena: 'trail', titol: 'Sèries a la pujada', km: 7.8,
             desnivell: 480, minuts: 62, pulsacions: 163, font: 'captura',
             kmEsforc: 12.6, dubtosa: false },
-          { data: '2026-07-29', mena: 'forca', titol: 'Esquena i espatlles', km: null,
+          { data: diaDe(p.dilluns, 2), mena: 'forca', titol: 'Esquena i espatlles', km: null,
             desnivell: null, minuts: 38, pulsacions: null, font: 'captura',
             kmEsforc: null, dubtosa: false },
           { data: null, mena: 'trail', titol: 'Sortida sense dia', km: 5.4,
@@ -250,6 +296,12 @@ fs.writeFileSync(path.join(CARPETA, 'index.html'),
  'icona-maskable.svg', 'favicon.svg'].forEach((f) => {
   if (fs.existsSync(f)) fs.copyFileSync(f, path.join(CARPETA, f));
 });
+
+/* I les fonts, que la pantalla les demana amb camí relatiu. */
+if (fs.existsSync('fonts')) {
+  fs.mkdirSync(path.join(CARPETA, 'fonts'), { recursive: true });
+  fs.readdirSync('fonts').forEach((f) => fs.copyFileSync(path.join('fonts', f), path.join(CARPETA, 'fonts', f)));
+}
 
 /* Les dues amplades alhora. Els desbordaments no es veuen mai a la finestra
    tal com la tens: es veuen quan poses la pantalla a 375 de debò. */

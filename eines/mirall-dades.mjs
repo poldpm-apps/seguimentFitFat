@@ -27,105 +27,84 @@ export function dades(AVUI, menys) {
     return localIso(d);
   };
 
-  // ------------------------------------------------------------- seguiment
-  /* Inventat, com tot el mirall. Les xifres de debò no surten mai d aqui:
-     aquest fitxer si que va al repositori public. */
-  const segPantalla = () => ({
-    avui: AVUI,
-    historic: [
-      { id: 'seg_1', data: '2026-06-05', pes: 71.4, cintura: 88, cinturaValida: false,
-        forca: 1, trail: 2, trailGros: 0, energia: 'normal', son: 'normal', gana: 'normal',
-        dieta: 'a mitges', fotos: { frontal: '', perfil: '', esquena: '' }, notes: 'Punt de partida.' },
-      { id: 'seg_2', data: '2026-06-12', pes: 70.8, cintura: 84.5, cinturaValida: true,
-        forca: 2, trail: 3, trailGros: 1, energia: 'normal', son: 'bé', gana: 'normal',
-        dieta: 'bé', fotos: { frontal: 'fals_1f', perfil: 'fals_1p', esquena: '' }, notes: '' },
-      { id: 'seg_3', data: '2026-06-19', pes: 69.3, cintura: 83, cinturaValida: true,
-        forca: 0, trail: 4, trailGros: 2, energia: 'baixa', son: 'normal', gana: 'molta',
-        dieta: 'a mitges', fotos: { frontal: '', perfil: '', esquena: '' }, notes: 'Setmana de molt desnivell.' },
-      { id: 'seg_4', data: '2026-06-26', pes: 69.5, cintura: 82.5, cinturaValida: true,
-        forca: 2, trail: 3, trailGros: 0, energia: 'normal', son: 'bé', gana: 'normal',
-        dieta: 'bé', fotos: { frontal: 'fals_4f', perfil: '', esquena: 'fals_4e' }, notes: '' }
-    ],
-    pla: {
-      'control.dia': '7',
-      'pla.resum': 'Dèficit moderat, proteïna alta, trail com a prioritat.',
-      'fase.1.desde': '2026-06-01', 'fase.1.nom': 'Base',
-      'fase.1.objectiu': 'més magre i en forma aeròbica'
-    },
-    fase: { desde: '2026-06-01', nom: 'Base', objectiu: 'més magre i en forma aeròbica',
-            kcal: 2000, proteina: 150, forca: 2, trail: 3 },
-    estat: { avui: AVUI, dia: 7, toca: true, pendent: true, fetAquestaSetmana: false,
-             fa: 38, ultim: '2026-06-26' },
-    llindars: { perdSana: [0.4, 0.7], perdRapida: 0.8, saltImpossible: 3.0,
-                cinturaIncoherent: 2.5, pesEstable: 0.3, forcaMinima: 2, diesTolerats: [5, 10] },
-    comEsMesura: {
-      pes: 'Matí, en dejú, després del lavabo. Si pots, mitjana de 2-3 dies.',
-      cintura: 'Matí, en dejú, dret i relaxat. Expiració normal. Cinta al melic, sense estrènyer.',
-      fotos: 'Mateix lloc, mateixa llum, mateixa hora, mateixa roba.'
-    },
-    /* La carrega de les setmanes que tenen control. La del 19 de juny hi es a
-       posta amb desnivell de debo i la del 26 no: aixi es veu que la linia
-       apareix quan hi ha dades i desapareix quan no n hi ha. */
-    carregues: {
-      '2026-06-15': { sessions: 4, trail: 3, forca: 1, km: 18.2, desnivell: 240,
-                      kmEsforc: 20.6, llargues: 0 },
-      '2026-06-22': null
-    }
-  });
-  // -------------------------------------------------------- entrenaments
-  /* Inventat, com tot el mirall. Les setmanes estan fetes a posta perquè es
-     vegi la diferencia que en Pol demanava: la del 20 de juliol son quatre
-     sortides curtes i planes, la del 27 son tres sortides amb desnivell de
-     debo. Amb «sortides: 4» i «sortides: 3» la primera semblava la mes dura;
-     amb quilometres d esforc no s hi assemblen. */
-  const entSessions = () => ([
-    { id: 'ent_1', data: '2026-07-20', mena: 'trail', titol: 'Volta pel canal',
-      km: 5.2, desnivell: 40, minuts: 31, kcal: 340, pulsacions: 148, font: 'captura', notes: '' },
-    { id: 'ent_2', data: '2026-07-22', mena: 'forca', titol: 'Tren superior',
-      km: null, desnivell: null, minuts: 42, kcal: 210, pulsacions: null, font: 'captura', notes: '' },
-    { id: 'ent_3', data: '2026-07-23', mena: 'trail', titol: 'Suau de tarda',
-      km: 6.1, desnivell: 90, minuts: 38, kcal: 400, pulsacions: 151, font: 'captura', notes: '' },
-    { id: 'ent_4', data: '2026-07-25', mena: 'trail', titol: 'Sortida del dissabte',
-      km: 8.4, desnivell: 210, minuts: 54, kcal: 560, pulsacions: 155, font: 'captura', notes: '' },
-    { id: 'ent_5', data: '2026-07-28', mena: 'trail', titol: 'Sèries a la pujada',
-      km: 7.8, desnivell: 480, minuts: 62, kcal: 640, pulsacions: 163, font: 'captura', notes: '' },
-    { id: 'ent_6', data: '2026-07-29', mena: 'forca', titol: 'Esquena i espatlles',
-      km: null, desnivell: null, minuts: 38, kcal: 190, pulsacions: null, font: 'ma', notes: '' },
-    { id: 'ent_7', data: '2026-08-01', mena: 'trail', titol: 'Matinal al Montseny',
-      km: 14.6, desnivell: 1120, minuts: 158, kcal: 1420, pulsacions: 149, font: 'captura', notes: '' }
-  ]);
+  // ------------------------------------------------- les setmanes del mirall
+  /* TOT ES COMPTA A PARTIR D'AVUI, i el seguiment i els entrenaments
+     comparteixen les mateixes setmanes: el control de cada diumenge llegeix
+     la càrrega de la seva setmana, i les carenes del seguiment es dibuixen
+     amb els entrenaments d'aquells dies. Amb dates fixes, el dia que les
+     dates quedaven enrere el mirall deixava de provar res.
+     Inventat, com tot el mirall: aquest fitxer va al repositori públic. */
+  const dlAra = dillunsDe(AVUI);
+  const N = 12;                                   // controls fets
+  const diumenge = (k) => suma(dlAra, -1 - 7 * k); // k = 0 és el de la setmana passada
+
+  // La sèrie, de la més vella a la d'ara.
+  const S = {
+    pes:    [80.6, 80.2, 80.4, 79.9, 80.0, 79.7, 79.5, 79.4, 79.1, 79.6, 78.7, 78.4],
+    cint:   [91.0, 90.8, 90.7, 90.4, 90.3, 89.9, 89.6, 89.4, 89.1, 89.3, 88.5, 88.0],
+    forca:  [1, 2, 1, 0, 2, 2, 2, 2, 1, 1, 2, 2],
+    trail:  [2, 2, 3, 0, 2, 3, 3, 3, 3, 4, 3, 3],
+    gros:   [0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    energia:['normal', 'normal', 'baixa', 'normal', 'normal', 'alta', 'normal', 'normal', 'normal', 'baixa', 'baixa', 'normal']
+  };
+
+  /* Les sortides de cada setmana: dia (0 = dilluns), mena, km, desnivell,
+     minuts i títol. Un patró per setmana, que es repeteix girat. */
+  const PATRONS = [
+    [[1, 'trail', 6.2, 120, 38, 'Suau de tarda'], [3, 'forca', null, null, 40, 'Tren superior'], [5, 'trail', 9.4, 420, 64, 'Volta pel Puigsacalm']],
+    [[0, 'forca', null, null, 35, 'Cames i core'], [2, 'trail', 7.8, 480, 62, 'Sèries a la pujada'], [5, 'trail', 14.6, 1120, 158, 'Matinal al Montseny'], [6, 'trail', 5.0, 60, 31, 'Rodatge de recuperació']],
+    [[1, 'trail', 8.1, 260, 52, 'Pel camí del Ter'], [3, 'forca', null, null, 42, 'Esquena i espatlles'], [4, 'trail', 6.0, 180, 39, 'Tirada curta'], [6, 'trail', 18.2, 1380, 210, 'Travessa del Collsacabra']],
+    [[2, 'trail', 10.4, 640, 78, 'Tavertet per dalt'], [3, 'forca', null, null, 38, 'Tren superior'], [5, 'trail', 12.0, 900, 128, 'Matagalls des de Collformic']]
+  ];
+  const sessions = [];
+  let nSes = 0;
+  for (let k = N; k >= 0; k--) {               // k = N … 1: setmanes amb control; 0: aquesta
+    const dl = suma(dlAra, -7 * k);
+    const vell = N - k;                         // índex a la sèrie
+    if (k > 0 && S.trail[vell] === 0) continue; // la setmana de vacances: res
+    const pat = PATRONS[(vell + 1) % PATRONS.length];
+    pat.forEach((p, n) => {
+      const data = suma(dl, p[0]);
+      if (data > AVUI) return;                  // el que encara no ha passat no hi és
+      sessions.push({ id: 'ent_' + (++nSes), data, mena: p[1], titol: p[5],
+        km: p[2], desnivell: p[3], minuts: p[4],
+        kcal: p[2] ? Math.round(p[4] * 9.5) : Math.round(p[4] * 5.5),
+        pulsacions: p[2] ? 140 + ((vell * 7 + n * 5) % 22) : null,
+        font: n % 3 === 2 ? 'ma' : 'captura', notes: '' });
+    });
+  }
+  const kmEsforc = (s) => (s.km || s.desnivell)
+    ? Math.round(((s.km || 0) + (s.desnivell || 0) / 100) * 10) / 10 : null;
 
   const entSetmana = (dl) => {
     const fins = suma(dl, 6);
-    const dins = entSessions().filter((s) => s.data >= dl && s.data <= fins)
-      .map((s) => {
-        const e = (s.km || s.desnivell)
-          ? Math.round(((s.km || 0) + (s.desnivell || 0) / 100) * 10) / 10 : null;
-        return Object.assign({}, s, { kmEsforc: e, llarga: e !== null && e >= 12 });
-      });
+    const dins = sessions.filter((s) => s.data >= dl && s.data <= fins)
+      .map((s) => { const e = kmEsforc(s); return Object.assign({}, s, { kmEsforc: e, llarga: e !== null && e >= 12 }); });
     const sumaCamp = (c) => dins.reduce((t, s) => t + (s[c] || 0), 0);
     const kmE = Math.round(sumaCamp('kmEsforc') * 10) / 10;
     let mesLlarga = null;
-    dins.forEach((s) => {
-      if (s.kmEsforc !== null && (!mesLlarga || s.kmEsforc > mesLlarga.kmEsforc)) mesLlarga = s;
-    });
+    dins.forEach((s) => { if (s.kmEsforc !== null && (!mesLlarga || s.kmEsforc > mesLlarga.kmEsforc)) mesLlarga = s; });
     return {
-      dilluns: dl, fins,
-      sessions: dins.length,
+      dilluns: dl, fins, sessions: dins.length,
       trail: dins.filter((s) => s.mena === 'trail').length,
       forca: dins.filter((s) => s.mena === 'forca').length,
       altres: dins.filter((s) => s.mena === 'altre').length,
-      km: Math.round(sumaCamp('km') * 10) / 10,
-      desnivell: sumaCamp('desnivell'),
-      minuts: sumaCamp('minuts'),
-      kmEsforc: kmE,
-      llargues: dins.filter((s) => s.llarga).length,
-      mesLlarga, llista: dins, dura: kmE >= 60
+      km: Math.round(sumaCamp('km') * 10) / 10, desnivell: sumaCamp('desnivell'), minuts: sumaCamp('minuts'),
+      kmEsforc: kmE, llargues: dins.filter((s) => s.llarga).length, mesLlarga, llista: dins, dura: kmE >= 60
     };
   };
+  const perDies = (s) => {
+    const d = [0, 0, 0, 0, 0, 0, 0];
+    s.llista.forEach((x) => { if (x.kmEsforc === null) return; for (let i = 0; i < 7; i++) if (suma(s.dilluns, i) === x.data) d[i] += x.kmEsforc; });
+    return d.map((v) => Math.round(v * 10) / 10);
+  };
 
-  const ENT_PASSOS = { '2026-07-20': { dilluns: '2026-07-20', total: 68420, mitjana: 9774, font: 'captura', id: 'pas_1' },
-                       '2026-07-27': { dilluns: '2026-07-27', total: 81250, mitjana: 11607, font: 'captura', id: 'pas_2' } };
+  const PASSOS = {};
+  for (let k = 1; k <= 6; k++) {
+    const dl = suma(dlAra, -7 * k);
+    const total = 61000 + ((k * 7919) % 21000);
+    PASSOS[dl] = { dilluns: dl, total, mitjana: Math.round(total / 7), font: 'captura', id: 'pas_' + k };
+  }
 
   const entPantalla = (desde) => {
     const dl = dillunsDe(desde || AVUI);
@@ -133,16 +112,63 @@ export function dades(AVUI, menys) {
     let cur = dl;
     for (let i = 0; i < 12; i++) {
       const s = entSetmana(cur);
-      corba.unshift({ dilluns: cur, kmEsforc: s.kmEsforc, sessions: s.sessions,
-                      desnivell: s.desnivell, passos: ENT_PASSOS[cur] ? ENT_PASSOS[cur].total : null });
+      corba.unshift({ dilluns: cur, kmEsforc: s.kmEsforc, sessions: s.sessions, desnivell: s.desnivell,
+                      passos: PASSOS[cur] ? PASSOS[cur].total : null, dies: perDies(s) });
       cur = suma(cur, -7);
     }
     const ara = entSetmana(dl);
-    ara.passos = ENT_PASSOS[dl] || null;
-    return { avui: AVUI, dilluns: dl, setmana: ara, corba,
-             total: entSessions().length,
+    ara.passos = PASSOS[dl] || null;
+    return { avui: AVUI, dilluns: dl, setmana: ara, corba, total: sessions.length,
              llindars: { llarga: 12, setmanaDura: 60 } };
   };
+
+  // ------------------------------------------------------------- seguiment
+  const historic = S.pes.map((pes, i) => {
+    const k = N - 1 - i;
+    const ambFotos = i === 0 || i === 4 || i === 8 || i === N - 1;
+    return {
+      id: 'seg_' + (i + 1), data: diumenge(k), pes, cintura: S.cint[i], cinturaValida: i !== 2,
+      forca: S.forca[i], trail: S.trail[i], trailGros: S.gros[i], energia: S.energia[i],
+      son: i % 4 === 0 ? 'malament' : 'normal', gana: i % 3 === 0 ? 'molta' : 'normal',
+      dieta: i % 5 === 0 ? 'a mitges' : 'bé',
+      fotos: ambFotos ? { frontal: 'fals_' + i + 'f', perfil: i % 8 === 0 ? 'fals_' + i + 'p' : '', esquena: 'fals_' + i + 'e' }
+                      : { frontal: '', perfil: '', esquena: '' },
+      notes: i === 0 ? 'Punt de partida de la fase.' : ''
+    };
+  });
+  const carregues = {};
+  historic.forEach((c) => {
+    const s = entSetmana(dillunsDe(c.data));
+    carregues[dillunsDe(c.data)] = s.sessions ? { sessions: s.sessions, trail: s.trail, forca: s.forca,
+      km: s.km, desnivell: s.desnivell, kmEsforc: s.kmEsforc, llargues: s.llargues } : null;
+  });
+  const diaDelControl = 7;
+  const avuiDia = ((new Date(AVUI + 'T12:00:00').getDay() + 6) % 7) + 1;
+  const ultim = historic[historic.length - 1];
+  const fetAquesta = ultim.data >= dlAra;
+  const segPantalla = () => ({
+    avui: AVUI,
+    historic,
+    pla: {
+      'control.dia': String(diaDelControl),
+      'pla.resum': 'Dèficit moderat, proteïna alta, trail com a prioritat.',
+      'fase.1.desde': historic[0].data, 'fase.1.nom': 'Base',
+      'fase.1.objectiu': 'més magre i en forma aeròbica'
+    },
+    fase: { desde: historic[0].data, nom: 'Base', objectiu: 'més magre i en forma aeròbica',
+            kcal: 2000, proteina: 150, forca: 2, trail: 3 },
+    estat: { avui: AVUI, dia: diaDelControl, toca: avuiDia >= diaDelControl,
+             pendent: avuiDia >= diaDelControl && !fetAquesta, fetAquestaSetmana: fetAquesta,
+             ultim: ultim.data },
+    llindars: { perdSana: [0.4, 0.7], perdRapida: 0.8, saltImpossible: 3.0,
+                cinturaIncoherent: 2.5, pesEstable: 0.3, forcaMinima: 2, diesTolerats: [5, 10] },
+    comEsMesura: {
+      pes: 'Matí, en dejú, després del lavabo. Si pots, mitjana de 2-3 dies.',
+      cintura: 'Matí, en dejú, dret i relaxat. Expiració normal —ni buidar pulmons ni contreure—. Cinta al melic, sense estrènyer.',
+      fotos: 'Mateix lloc, mateixa llum, mateixa hora, mateixa roba.'
+    },
+    carregues
+  });
 
   // ------------------------------------------------------------------ inici
   const nucliInici = () => ({
@@ -153,10 +179,10 @@ export function dades(AVUI, menys) {
     ],
     targetes: [
       { modul: 'seguiment', icona: 'seguiment', etiqueta: 'Control setmanal', valor: 'pendent', urgent: true, accio: 'seguiment' },
-      { modul: 'entrenaments', icona: 'entrenaments', etiqueta: 'Entrenaments', valor: '28,4 km-e', urgent: false, accio: 'entrenaments' }
+      { modul: 'entrenaments', icona: 'entrenaments', etiqueta: 'Entrenaments', valor: 'aquesta setmana', urgent: false, accio: 'entrenaments' }
     ],
     ia: { disponible: false }
   });
 
-  return { nucliInici, segPantalla, entPantalla, entSetmana };
+  return { nucliInici, segPantalla, entPantalla, entSetmana, dlAra, suma, dillunsDe };
 }
