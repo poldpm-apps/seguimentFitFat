@@ -67,7 +67,16 @@ function configura() {
   var informe = Esquema.sincronitza();
   var afegides = Config.inicialitza();
   var moduls = Moduls.sincronitzaFull();
-  var ajustos = portaAjustosDeJefe_(portades.origen);
+  /* ELS AJUSTOS ES BUSQUEN SEMPRE, no només quan s'acaben de copiar les
+     pestanyes. Si la primera execució es va aturar a mig camí —en autoritzar
+     el projecte, per exemple—, les pestanyes ja hi eren a la segona i el full
+     de JEFE no es tornava a obrir: la IA es quedava apagada sense dir-ho. */
+  var origen = portades.origen;
+  if (!origen) {
+    try { origen = trobaFullJefe_(ss.getId()); }
+    catch (e) { Log.avis('instalacio', 'No he trobat el full de JEFE per portar-ne els ajustos: ' + e.message); }
+  }
+  var ajustos = portaAjustosDeJefe_(origen);
 
   if (acabatDeCrear) netejaFullPerDefecte_(ss);
 

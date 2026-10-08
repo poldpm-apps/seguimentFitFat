@@ -2018,7 +2018,12 @@ console.log('\nEl cos: viu a /seguimentFitFat/, porta el seu nom i troba les cos
       /r\.tallat \?/.test(fs.readFileSync('apps-script/vista_seguiment.html', 'utf8')));
 
   cal("els ajustos de la IA es porten de JEFE, perquè de sèrie la IA va apagada",
-      /'ia_activa'/.test(inst) && /portaAjustosDeJefe_\(portades\.origen\)/.test(inst));
+      /'ia_activa'/.test(inst) && /portaAjustosDeJefe_\(origen\)/.test(inst));
+  /* I ES BUSQUEN SEMPRE. El primer `instala()` d'en Pol es va aturar a mig
+     camí; a la segona, les pestanyes ja hi eren, el full de JEFE no es
+     tornava a obrir i la IA es quedava apagada sense dir-ho. */
+  cal('encara que les pestanyes ja hi siguin',
+      /if \(!origen\) \{\s*try \{ origen = trobaFullJefe_\(ss\.getId\(\)\); \}/.test(inst));
 }
 
 // ------------------------------- el control desa, els entrenaments hi arriben
