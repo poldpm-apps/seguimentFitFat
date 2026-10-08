@@ -1959,10 +1959,10 @@ console.log('\nEl full índex: cap apartat es pot quedar sense porta');
 /* Les coses que la separació de JEFE va haver de canviar o de respectar, i
    que si un dia es desfan no fallaria res a la vista: l'app s'instal·laria
    com si fos JEFE, trepitjaria la memòria de Nutrició o perdria les fotos. */
-console.log('\nEl cos: viu a /cos/, porta el seu nom i troba les coses de JEFE');
+console.log('\nEl cos: viu a /seguimentFitFat/, porta el seu nom i troba les coses de JEFE');
 {
   const manifest = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
-  cal("el manifest té l'id del cos, no el de JEFE", manifest.id === '/cos/', manifest.id);
+  cal("el manifest té l'id del cos, no el de JEFE", manifest.id === '/seguimentFitFat/', manifest.id);
   /* ANDROID NO FABRICA L'APP AMB SVG. A Nutrició, amb només icones SVG,
      Chrome deia «ja està instal·lada» i en obrir-la «l'app no s'ha pogut
      obrir». Calen PNG de 192 i de 512, i una de retallable, des del primer dia. */

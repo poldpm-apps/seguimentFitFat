@@ -5,7 +5,7 @@ apartats de **Seguiment FitFat** i d'**Entrenaments** de JEFE i fa exactament
 el mateix: dues pantalles, una sola app, perquè el control setmanal llegeix la
 càrrega de la setmana dels entrenaments.
 
-- **L'app:** <https://poldpm.github.io/cos/>
+- **L'app:** <https://poldpm.github.io/seguimentFitFat/>
 - **Les dades:** un full de càlcul propi, «El cos», al teu Drive.
 - **Les fotos:** a la carpeta «JEFE · Seguiment físic» del teu Drive, la de
   sempre. El full només en guarda l'identificador.
@@ -78,5 +78,5 @@ Mai al codi ni al repositori.
 - **Android necessita icones PNG** (a Nutrició, amb només SVG, la instal·lació
   es quedava a mitges). El manifest porta PNG de 192 i 512 i una de
   retallable, abans dels SVG; una prova ho vigila.
-- **L'`"id"` del manifest és `/cos/` i no es canvia mai.** Canviar-lo vol dir
+- **L'`"id"` del manifest és `/seguimentFitFat/` i no es canvia mai.** Canviar-lo vol dir
   que, per a Chrome, és una altra app.
