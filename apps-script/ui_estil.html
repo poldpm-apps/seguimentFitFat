@@ -245,6 +245,11 @@ input[type="date"].entrada { min-height: 48px; }
 .modal-cap h2 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; text-transform: none; }
 .modal-cap .btn-icona { margin-right: calc(-1 * var(--e2)); }
 .modal > p + p, .modal > p + .formulari, .modal > p + .form-ajustos { margin-top: var(--e3); }
+/* La finestra de connexió posa els camps directament al full, sense formulari:
+   l'aire entre ells ha de venir d'aquí. */
+.modal > .camp + .camp { margin-top: var(--e5); }
+.modal > .camp-mal { margin-top: var(--e3); }
+.modal > .camp + .menut, .modal > .camp-mal + .menut { margin-top: var(--e3) !important; }
 @media (min-width: 640px) {
   .fosc { align-items: center; padding: var(--e5); }
   .modal { max-width: 540px; max-height: 86dvh; border: 1px solid var(--tinta);
