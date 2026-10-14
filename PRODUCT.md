@@ -44,7 +44,7 @@ la setmana surt de regles fixes, no d'una IA.
   una proposta que s'ha de confirmar; les files dubtoses van marcades.
 - Les dades viuen en un full de càlcul de Google propi; les fotos, en una carpeta
   privada del seu Drive. El servidor és Apps Script; la pantalla la serveix GitHub
-  Pages a `poldpm.github.io/seguimentFitFat`, instal·lable al mòbil.
+  Pages a `poldpm-apps.github.io/seguimentFitFat`, instal·lable al mòbil.
 
 ## Capabilities and Constraints
 

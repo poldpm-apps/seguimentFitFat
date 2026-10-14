@@ -5,7 +5,7 @@ apartats de **Seguiment FitFat** i d'**Entrenaments** de JEFE i fa exactament
 el mateix: dues pantalles, una sola app, perquè el control setmanal llegeix la
 càrrega de la setmana dels entrenaments.
 
-- **L'app:** <https://poldpm.github.io/seguimentFitFat/>
+- **L'app:** <https://poldpm-apps.github.io/seguimentFitFat/>
 - **Les dades:** un full de càlcul propi, «El cos», al teu Drive.
 - **Les fotos:** a la carpeta «JEFE · Seguiment físic» del teu Drive, la de
   sempre. El full només en guarda l'identificador.
@@ -80,3 +80,10 @@ Mai al codi ni al repositori.
   retallable, abans dels SVG; una prova ho vigila.
 - **L'`"id"` del manifest és `/seguimentFitFat/` i no es canvia mai.** Canviar-lo vol dir
   que, per a Chrome, és una altra app.
+- **L'app viu a `poldpm-apps.github.io`, no a `poldpm.github.io`.** Al mòbil
+  hi ha una app amagada i trencada que reclama tot el domini `poldpm.github.io`:
+  Android hi deia «ja està instal·lada» i només deixava crear una drecera, amb
+  el codi d'instal·lació idèntic al de Nutrició, que a `poldpm-apps` sí que
+  s'instal·la. Esborrar les dades de Chrome no ho arregla: les apps instal·lades
+  són aplicacions d'Android a part. Les apps noves, a `poldpm-apps` i en un camí
+  que no s'hagi fet servir mai.
