@@ -80,10 +80,9 @@ Mai al codi ni al repositori.
   retallable, abans dels SVG; una prova ho vigila.
 - **L'`"id"` del manifest és `/seguimentFitFat/` i no es canvia mai.** Canviar-lo vol dir
   que, per a Chrome, és una altra app.
-- **L'app viu a `poldpm-apps.github.io`, no a `poldpm.github.io`.** Al mòbil
-  hi ha una app amagada i trencada que reclama tot el domini `poldpm.github.io`:
-  Android hi deia «ja està instal·lada» i només deixava crear una drecera, amb
-  el codi d'instal·lació idèntic al de Nutrició, que a `poldpm-apps` sí que
-  s'instal·la. Esborrar les dades de Chrome no ho arregla: les apps instal·lades
-  són aplicacions d'Android a part. Les apps noves, a `poldpm-apps` i en un camí
-  que no s'hagi fet servir mai.
+- **Instal·la-la amb el botó de la pàgina, no amb el menú de Chrome.** Al mòbil,
+  quan al mateix domini ja hi ha una altra app instal·lada, el menú diu «ja està
+  instal·lada» i només deixa crear una drecera. El botó «Instal·la l'app» de
+  l'inici crida la instal·lació del navegador directament i sí que funciona (es
+  va descobrir amb la de nòmines). L'avís del navegador es desa a la capçalera
+  de la pàgina publicada (`eines/construeix.mjs`); una prova ho vigila.
